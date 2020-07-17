@@ -83,28 +83,45 @@ mr_init() {
 #=== ADD =======================================================================
 usage_add() {
 	cat<<-EOF
-Usage: mr add [arguments]... [message]...
+Usage: mr add [OPTION]... [MESSAGE]...
 Arguments:
-  -a, --append=ID
+  -a, --append=LN
+  -f, --file=FILE
 	EOF
 }
 
 NUMRE='^[0-9]+$'
 
 mr_add() {
-	PARAMS=`getopt -o a: --long append: -n 'mr_add' -- "$@"`
+	PARAMS=`getopt -o a:f: -l append:,file: -n 'mr_add' -- "$@"`
 	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
 	eval set -- "$PARAMS"
 	debug "mr_add($@)"
-	local append=""
+	local append=""; local mr_file=$MR_FILE
 	while : ; do
 		case "$1" in
-		-t|--tag) append="$2"; shift 2;;
+		-a|--append) append="$2"; shift 2; debug "append=$append";;
+		-f|--file) mr_file="$2"; shift 2; debug "mr_file=$mr_file";;
 		--) shift; break;;
 		*) echo "Unknown option: $1"; return;;
 		esac
 	done
 	local message="$*"; debug "message=$message"
+
+	if [ ! -f "$mr_file" ]; then
+		echo "$mr_file not found, will be created."
+		[ -n "$append" ] && echo "No line#$append." && return
+	else
+		if [[ ! $append =~ $NUMRE ]]; then
+			echo "$append is not a number."
+			return
+		fi
+		lc=$(wc -l "$mr_file" | cut -d " " -f1); debug "lc=$lc"
+		if (( $append > $lc )) || (( $append < 1 )); then
+			echo "No line#$append."
+			return
+		fi
+	fi
 
 	if [ -z "$message" ]; then
 		tempf=$(mktemp -u -t mr.XXXXXXXX.mt)
@@ -114,10 +131,15 @@ mr_add() {
 		debug "message=$message"
 	fi
 	if [ -z $(echo $message | tr -d '[:space:]') ]; then # empty?
-		vecho "Nothing!"
-	else
+		echo "Empty message, cancel."
+	elif [ -z "$append" ]; then
 		datestr=$(date '+%Y%m%d%H%M')
-		echo "$datestr<nF>${message//$'\n'/<nL>}" >> $MR_FILE
+		echo "$datestr<nF>${message//$'\n'/<nL>}" >> $mr_file
+	else #append
+		local old=$(sed -n -e "${append}p" $mr_file)
+		[ -z "$old" ] && echo "No line#$append." && return
+		local msg="${message//$'\n'/<nL>}"; debug "msg=$msg"
+		sed -i -e "${append}c $old<nL>$msg" $mr_file
 	fi
 }
 #=== EDIT ======================================================================
