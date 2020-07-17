@@ -147,7 +147,6 @@ usage_edit() {
 	cat<<-EOF
 Usage: mr edit [OPTION]... LN [MESSAGE]...
 Arguments:
-  -a, --append
   -f, --file
 	EOF
 }
@@ -157,10 +156,9 @@ mr_edit() {
 	PARAMS=$(getopt -o af: -l append,file: -n 'mr_init' -- "$@")
 	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
 	eval set -- "$PARAMS"
-	local append=false; local mr_file=$MR_FILE
+	local mr_file=$MR_FILE
 	while : ; do
 		case "$1" in
-		-a|--append) append=true; shift;;
 		-f|--file) mr_file=$2; shift 2;;
 		--) shift; break;;
 		*) echo "Unknown option: $1"; return;;
@@ -179,7 +177,7 @@ mr_edit() {
 
 	if [ -z "$message" ]; then
 		tempf=$(mktemp -u -t mr.XXXXXXXX.mt)
-		[ $append == false ] && echo "$old_msg" > $tempf
+		echo "$old_msg" > $tempf
 		vim $tempf
 		[ -f $tempf ] && message=$(cat $tempf) || return
 		rm -f $tempf
@@ -187,12 +185,8 @@ mr_edit() {
 	fi
 
 	local msg="${message//$'\n'/<nL>}"; debug "msg=$msg"
-	if [ $append == true ]; then
-		sed -i -e "${ln}c $old<nL>$msg" $mr_file
-	else
-		[ "$old_msg" == "$message" ] && debug "Not modified." && return
-		sed -i -e "${ln}c $old_ts$msg" $mr_file
-	fi
+	[ "$old_msg" == "$message" ] && debug "Not modified." && return
+	sed -i -e "${ln}c $old_ts$msg" $mr_file
 }
 #=== LOG =======================================================================
 usage_log() {
