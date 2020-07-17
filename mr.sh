@@ -117,7 +117,7 @@ mr_add() {
 		vecho "Nothing!"
 	else
 		datestr=$(date '+%Y%m%d%H%M')
-		echo "$datestr"$'.:\t'"${message//$'\n'/<nL>}" >> $MR_FILE
+		echo "$datestr<nF>${message//$'\n'/<nL>}" >> $MR_FILE
 	fi
 }
 #=== EDIT ======================================================================
@@ -150,8 +150,8 @@ mr_edit() {
 	[ ! -f "$mr_file" ] && echo "$mr_file not found!" && return
 	local old=$(sed -n -e "${ln}p" $mr_file)
 	[ -z "$old" ] && echo "Line $ln not found!" && return
-	local old_ts=$(sed -e 's/\(^[0-9]\+.:\t\).*/\1/' <<< $old)
-	local old_msg=$(sed 's/^[0-9]\+.:\t//' <<< $old)
+	local old_ts=$(sed -e 's/\(^[0-9]\+<nF>\).*/\1/' <<< $old)
+	local old_msg=$(sed 's/^[0-9]\+<nF>//' <<< $old)
 	old_msg=${old_msg//<nL>/$'\n'}
 	debug "old_ts=$old_ts old_msg=$old_msg"
 
@@ -198,7 +198,7 @@ mr_log() {
 		&& return
 	cat $MR_FILE | awk -v verbose="$verbose" '
 BEGIN {
-	FS=".:\t"
+	FS="<nF>"
 }
 {
 	msg = $2
