@@ -68,6 +68,7 @@ mr_init() {
 	alias ${mr_cmd}init=". $mr_sh init"
 	alias ${mr_cmd}a="$mr_sh a"
 	alias ${mr_cmd}l="$mr_sh l"
+	alias ${mr_cmd}lv="$mr_sh l -v"
 	alias ${mr_cmd}e="$mr_sh e"
 
 	local mr_dir=$(dirname $mr_file); debug "mr_dir=$mr_dir"
@@ -116,7 +117,7 @@ mr_add() {
 		vecho "Nothing!"
 	else
 		datestr=$(date '+%Y%m%d%H%M')
-		echo "$datestr"$'.:\t'"${message//$'\n'/\\n}" >> $MR_FILE
+		echo "$datestr"$'.:\t'"${message//$'\n'/<nL>}" >> $MR_FILE
 	fi
 }
 #=== EDIT ======================================================================
@@ -151,7 +152,7 @@ mr_edit() {
 	[ -z "$old" ] && echo "Line $ln not found!" && return
 	local old_ts=$(sed -e 's/\(^[0-9]\+.:\t\).*/\1/' <<< $old)
 	local old_msg=$(sed 's/^[0-9]\+.:\t//' <<< $old)
-	old_msg=${old_msg//\\n/$'\n'}
+	old_msg=${old_msg//<nL>/$'\n'}
 	debug "old_ts=$old_ts old_msg=$old_msg"
 
 	if [ -z "$message" ]; then
@@ -163,9 +164,9 @@ mr_edit() {
 		debug "message=$message"
 	fi
 
-	local msg="${message//$'\n'/\\\\n}"; debug "msg=$msg"
+	local msg="${message//$'\n'/<nL>}"; debug "msg=$msg"
 	if [ $append == true ]; then
-		sed -i -e "${ln}c $old\\\n$msg" $mr_file
+		sed -i -e "${ln}c $old<nL>$msg" $mr_file
 	else
 		[ "$old_msg" == "$message" ] && debug "Not modified." && return
 		sed -i -e "${ln}c $old_ts$msg" $mr_file
@@ -202,9 +203,9 @@ BEGIN {
 {
 	msg = $2
 	if(verbose == "true")
-		gsub(/\\n/,"\n",msg);
+		gsub(/<nL>/,"\n",msg);
 	else
-		gsub(/\\n.*/,"...",msg);
+		gsub(/<nL>.*/,"...",msg);
 	dt = substr($1,3)
 	print "\033[0;32m["dt"]\033[0;36m"NR"\033[0m\t"msg;
 }
