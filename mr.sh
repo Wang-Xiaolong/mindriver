@@ -175,28 +175,28 @@ mr_edit() {
 #=== LOG =======================================================================
 usage_log() {
 	cat<<-EOF
-Usage: mr add [arguments]... [message]...
+Usage: mr add [OPTION]... [FILE]...
 Arguments:
-  -d, --dir=DIR
+  -n, --mono
 	EOF
 }
 
 mr_log() {
-	PARAMS=`getopt -o i: --long tag: -n 'mr_list' -- "$@"`
+	PARAMS=`getopt -o n -l mono -n 'mr_list' -- "$@"`
 	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
 	eval set -- "$PARAMS"
 	debug "mr_list($@)"
-	local tag=""
+	local mono=false
 	while : ; do
 		case "$1" in
-		-t|--tag) tag="$2"; shift 2;;
+		-n|--mono) mono=true; shift;;
 		--) shift; break;;
 		*) echo "Unknown option: $1"; return;;
 		esac
 	done
 	[ ! -f "$MR_FILE" ] && echo "$(basename $MR_FILE) is not created yet."\
 		&& return
-	cat $MR_FILE | awk -v verbose="$verbose" '
+	cat $MR_FILE | awk -v verbose="$verbose" -v mono="$mono" '
 BEGIN {
 	FS="<nF>"
 }
@@ -207,7 +207,10 @@ BEGIN {
 	else
 		gsub(/<nL>.*/,"...",msg);
 	dt = substr($1,3)
-	print "\033[0;32m["dt"]\033[0;36m"NR"\033[0m\t"msg;
+	if(mono == "true")
+		print "["dt"]"NR"\t"msg;
+	else
+		print "\033[0;32m["dt"]\033[0;36m"NR"\033[0m\t"msg;
 }
 	'
 }
