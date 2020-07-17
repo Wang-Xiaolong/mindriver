@@ -145,7 +145,7 @@ mr_add() {
 #=== EDIT ======================================================================
 usage_edit() {
 	cat<<-EOF
-Usage: mr edit [OPTION]... LN [MESSAGE]...
+Usage: mr edit [OPTION]... LN [EXPRESSION]...
 Arguments:
   -f, --file
 	EOF
@@ -182,11 +182,10 @@ mr_edit() {
 		[ -f $tempf ] && message=$(cat $tempf) || return
 		rm -f $tempf
 		debug "message=$message"
+		local msg="${message//$'\n'/<nL>}"; debug "msg=$msg"
+		[ "$old_msg" == "$message" ] && echo "Not modified." && return
+		sed -i -e "${ln}c $old_ts$msg" $mr_file
 	fi
-
-	local msg="${message//$'\n'/<nL>}"; debug "msg=$msg"
-	[ "$old_msg" == "$message" ] && debug "Not modified." && return
-	sed -i -e "${ln}c $old_ts$msg" $mr_file
 }
 #=== LOG =======================================================================
 usage_log() {
