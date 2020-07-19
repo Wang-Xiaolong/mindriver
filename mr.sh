@@ -293,7 +293,7 @@ for arg in "$@"; do
 	case "$arg" in
 	'-?'|-h|--help) help_me=true;; # ? is a wildcard if not br by ''
 	-v|--verbose) verbose=true;;
-	--debug) debug=true; verbose=true;;
+	--debug) debug=true;;
 	*) args+=("$arg");; # collect args other than help/verbose/debug
 	esac
 done
