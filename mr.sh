@@ -165,7 +165,7 @@ mr_edit() {
 		esac
 	done
 	local ln=$1; shift; debug "ln=$ln"
-	local message="$*"; debug "message=$message"
+	local exps="$*"; debug "exps=$exps"
 
 	[ ! -f "$mr_file" ] && echo "$mr_file not found!" && return
 	local old=$(sed -n -e "${ln}p" $mr_file)
@@ -175,7 +175,7 @@ mr_edit() {
 	old_msg=${old_msg//<nL>/$'\n'}
 	debug "old_ts=$old_ts old_msg=$old_msg"
 
-	if [ -z "$message" ]; then
+	if [ -z "$exps" ]; then
 		tempf=$(mktemp -u -t mr.XXXXXXXX.mt)
 		echo "$old_msg" > $tempf
 		vim $tempf
@@ -185,6 +185,19 @@ mr_edit() {
 		local msg="${message//$'\n'/<nL>}"; debug "msg=$msg"
 		[ "$old_msg" == "$message" ] && echo "Not modified." && return
 		sed -i -e "${ln}c $old_ts$msg" $mr_file
+	else
+		local exp=""
+		for arg in "$@"; do
+			exp="$exp"$'\n'"$arg"
+		done
+		debug "exp=$exp"
+		sed -e "$exp" <<< $old_msg
+		[ $? -ne 0 ] && return
+		read -p "OK? " -n 1 -r
+		[[ ! $REPLY =~ ^[Yy]$ ]] && return
+		local new_msg=$(sed -e "$exp" <<< $old_msg)
+		new_msg=${new_msg//$'\n'/<nL>}
+		sed -i -e "${ln}c $old_ts$new_msg" $mr_file
 	fi
 }
 #=== LOG =======================================================================
