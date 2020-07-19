@@ -192,7 +192,7 @@ mr_edit() {
 		debug "exp=$exp"
 		sed -e "$exp" <<< $old_msg
 		[ $? -ne 0 ] && return
-		read -p "OK? " -n 1 -r
+		read -p "OK(y/n)? " -n 1 -r
 		[[ ! $REPLY =~ ^[Yy]$ ]] && return
 		local new_msg=$(sed -e "$exp" <<< $old_msg)
 		new_msg=${new_msg//$'\n'/<nL>}
