@@ -18,7 +18,6 @@ You can run 'mr <command> <-h|--help|-?>' to get the document of each command.
 
 #=== PUBLIC FUNCTIONS ==========================================================
 debug() { [ $debug == true ] && >&2 echo "$@"; }
-vecho() { [ $verbose == true ] && echo "$@"; }
 # only "$@" can trans args properly, $@/$*/"$*" can't.
 str_trim() { echo "$1" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//'; }
 
@@ -210,14 +209,15 @@ Arguments:
 }
 
 mr_log() {
-	PARAMS=`getopt -o n -l mono -n 'mr_list' -- "$@"`
+	PARAMS=`getopt -o nv -l mono,verbose -n 'mr_list' -- "$@"`
 	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
 	eval set -- "$PARAMS"
 	debug "mr_list($@)"
-	local mono=false
+	local mono=false; local verbose=false;
 	while : ; do
 		case "$1" in
 		-n|--mono) mono=true; shift;;
+		-v|--verbose) verbose=true; shift;;
 		--) shift; break;;
 		*) echo "Unknown option: $1"; return;;
 		esac
@@ -286,15 +286,14 @@ mr_shell() {
 #=== MAIN ======================================================================
 [ $# -eq 0 ] && usage && exit # bkm for no arg check
 
-# process help & verbose & debug in 1 place
+# process help & debug before other options
 args=() # empty array
-help_me=false; verbose=false; debug=false
+help_me=false; debug=false
 for arg in "$@"; do
 	case "$arg" in
 	'-?'|-h|--help) help_me=true;; # ? is a wildcard if not br by ''
-	-v|--verbose) verbose=true;;
 	--debug) debug=true;;
-	*) args+=("$arg");; # collect args other than help/verbose/debug
+	*) args+=("$arg");; # collect args other than help/debug
 	esac
 done
 
