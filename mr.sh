@@ -187,7 +187,7 @@ mr_add() {
 	if [ -z $(echo $message | tr -d '[:space:]') ]; then # empty?
 		echo "Empty message, cancel."
 	elif [ -z "$append" ]; then
-		datestr=$(date '+%Y%m%d%H%M')
+		datestr=$(date '+%Y%m%d%H%M%S')
 		echo "$datestr<nF>${message//$'\n'/<nL>}" >> $mr_file
 	else #append
 		local old=$(sed -n -e "${append}p" $mr_file)
