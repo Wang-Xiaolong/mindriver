@@ -135,7 +135,7 @@ mr_add() {
 	if [ ! -f "$mr_file" ]; then
 		echo "$mr_file not found, will be created."
 		[ -n "$append" ] && echo "No line#$append." && return
-	else
+	elif [ -n "$append" ]; then
 		if [[ ! $append =~ $NUMRE ]]; then
 			echo "$append is not a number."
 			return
