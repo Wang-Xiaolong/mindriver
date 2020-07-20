@@ -90,8 +90,6 @@ log_nomsg=''
 get_log_nomsg() { log_nomsg=$(sed -e 's/\(^[0-9]\+<nF>\).*/\1/' <<< $log_raw); }
 log_time=''
 get_log_time() { log_time=$(sed -e 's/\(^[0-9]\+\).*/\1/' <<< $log_raw); }
-dec_log_time=''
-dec_log_time() { dec_log_time="${1:0:4}-${1:4:2}-${1:6:2} ${1:8:2}:${1:10:2}:${1:12:2}"; }
 log_msg=''
 get_log_msg() { log_msg=$(sed 's/^[0-9]\+<nF>//' <<< $log_raw); }
 dec_log_msg=''
@@ -127,10 +125,9 @@ mr_view() {
 
 	get_log_raw "$mr_file" $ln
 	get_log_time
-	dec_log_time "$log_time"
 	get_log_msg
 	dec_log_msg "$log_msg"
-	echo "$dec_log_time"
+	date -d "$log_time" "+[%Y-%m-%d(WW%U.%w) %H:%M:%S]"
 	echo "$dec_log_msg"
 }
 
@@ -187,7 +184,7 @@ mr_add() {
 	if [ -z $(echo $message | tr -d '[:space:]') ]; then # empty?
 		echo "Empty message, cancel."
 	elif [ -z "$append" ]; then
-		datestr=$(date '+%Y%m%d%H%M%S')
+		datestr=$(date '+%s')
 		echo "$datestr<nF>${message//$'\n'/<nL>}" >> $mr_file
 	else #append
 		local old=$(sed -n -e "${append}p" $mr_file)
@@ -285,15 +282,20 @@ BEGIN {
 }
 {
 	msg = $2
-	if(verbose == "true")
+	if(verbose == "true") {
+		dt = strftime("%Y-%m-%d(WW%U.%w) %H:%M:%S", $1)
 		gsub(/<nL>/,"\n",msg);
-	else
+		sep = "\n";
+	} else {
+		dt = substr($1,3,10);
 		gsub(/<nL>.*/,"...",msg);
-	dt = substr($1,3,10)
+		sep = "\t"
+	}
 	if(mono == "true")
-		print "["dt"]"NR"\t"msg;
+		head = "["dt"]"NR;
 	else
-		print "\033[0;32m["dt"]\033[0;36m"NR"\033[0m\t"msg;
+		head = "\033[0;32m["dt"]\033[0;36m"NR"\033[0m";
+	print head""sep""msg;
 }
 	'
 }
