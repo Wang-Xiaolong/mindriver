@@ -80,20 +80,20 @@ mr_init() {
 	[ $shell == true ] && mr_shell
 }
 #=== FILE ======================================================================
-mr_log=''
-mr_log() { # $1=file $2=ln
+log_raw=''
+get_log_raw() { # $1=file $2=ln
 	[ ! -f "$1" ] && echo "$1 not found!" && return 1
-	mr_log=$(sed -n -e "${2}p" $1)
-	[ -z "$mr_log" ] && echo "Line $2 not found!" && return 2
+	log_raw=$(sed -n -e "${2}p" $1)
+	[ -z "$log_raw" ] && echo "Line $2 not found!" && return 2
 }
-mr_log_time=''
-mr_log_time() { mr_log_time=$(sed -e 's/\(^[0-9]\+<nF>\).*/\1/' <<< $mr_log); }
-mr_log_msg=''
-mr_log_msg() { mr_log_msg=$(sed 's/^[0-9]\+<nF>//' <<< $mr_log); }
-mr_log_demsg=''
-mr_log_demsg() { mr_log_demsg=${1//<nL>/$'\n'}; }
-mr_log_enmsg=''
-mr_log_enmsg() { mr_log_enmsg=${1//$'\n'/<nL>}; }
+log_time=''
+get_log_time() { log_time=$(sed -e 's/\(^[0-9]\+<nF>\).*/\1/' <<< $log_raw); }
+log_msg=''
+get_log_msg() { log_msg=$(sed 's/^[0-9]\+<nF>//' <<< $log_raw); }
+dec_log_msg=''
+dec_log_msg() { dec_log_msg=${1//<nL>/$'\n'}; }
+enc_log_msg=''
+enc_log_msg() { enc_log_msg=${1//$'\n'/<nL>}; }
 
 #=== VIEW ======================================================================
 usage_view() {
@@ -101,6 +101,7 @@ usage_view() {
 Usage: mr view [OPTION]... [LN]...
 Arguments:
   -f, --file=FILE
+  -l, --ln
 	EOF
 }
 
