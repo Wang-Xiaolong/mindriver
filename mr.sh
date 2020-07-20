@@ -86,8 +86,12 @@ get_log_raw() { # $1=file $2=ln
 	log_raw=$(sed -n -e "${2}p" $1)
 	[ -z "$log_raw" ] && echo "Line $2 not found!" && return 2
 }
+log_nomsg=''
+get_log_nomsg() { log_nomsg=$(sed -e 's/\(^[0-9]\+<nF>\).*/\1/' <<< $log_raw); }
 log_time=''
-get_log_time() { log_time=$(sed -e 's/\(^[0-9]\+<nF>\).*/\1/' <<< $log_raw); }
+get_log_time() { log_time=$(sed -e 's/\(^[0-9]\+\).*/\1/' <<< $log_raw); }
+dec_log_time=''
+dec_log_time() { dec_log_time="${1:0:4}-${1:4:2}-${1:6:2} ${1:8:2}:${1:10:2}:${1:12:2}"; }
 log_msg=''
 get_log_msg() { log_msg=$(sed 's/^[0-9]\+<nF>//' <<< $log_raw); }
 dec_log_msg=''
@@ -101,8 +105,33 @@ usage_view() {
 Usage: mr view [OPTION]... [LN]...
 Arguments:
   -f, --file=FILE
-  -l, --ln
+  -l, --linenum
 	EOF
+}
+
+mr_view() {
+	PARAMS=`getopt -o f:l -l file:,linenum -n 'mr_view' -- "$@"`
+	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
+	eval set -- "$PARAMS"
+	debug "mr_view($@)"
+	local mr_file=$MR_FILE; local pr_ln=false;
+	while : ; do
+		case "$1" in
+		-f|--file) file=$2; shift 2;;
+		-l|--linenum) pr_ln=true; shift;;
+		--) shift; break;;
+		*) echo "Unknown option: $1"; return;;
+		esac
+	done
+	ln=$1
+
+	get_log_raw "$mr_file" $ln
+	get_log_time
+	dec_log_time "$log_time"
+	get_log_msg
+	dec_log_msg "$log_msg"
+	echo "$dec_log_time"
+	echo "$dec_log_msg"
 }
 
 #=== ADD =======================================================================
@@ -283,6 +312,7 @@ process_command() {
 	case "$1" in  #$1 is command
 	init) shift; [ $help_me == true ] && usage_init || mr_init "$@";;
 	a|add) shift; [ $help_me == true ] && usage_add || mr_add "$@";;
+	v|view) shift; [ $help_me == true ] && usage_view || mr_view "$@";;
 	e|ed|edit) shift; [ $help_me == true ] && usage_edit || mr_edit "$@";;
 	l|log) shift; [ $help_me == true ] && usage_log || mr_log "$@";;
 	ls) shift; [ $help_me == true ] && usage_list || mr_list "$@";;
