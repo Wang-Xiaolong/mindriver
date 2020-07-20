@@ -283,18 +283,18 @@ BEGIN {
 {
 	msg = $2
 	if(verbose == "true") {
-		dt = strftime("%Y-%m-%d(WW%U.%w) %H:%M:%S", $1)
+		dt = strftime("%Y-%m-%d (WW%U.%w) %H:%M:%S", $1)
 		gsub(/<nL>/,"\n",msg);
 		sep = "\n";
 	} else {
-		dt = substr($1,3,10);
+		dt = strftime("%m/%d %H:%M");
 		gsub(/<nL>.*/,"...",msg);
 		sep = "\t"
 	}
 	if(mono == "true")
-		head = "["dt"]"NR;
+		head = "["dt"] "NR;
 	else
-		head = "\033[0;32m["dt"]\033[0;36m"NR"\033[0m";
+		head = "\033[0;32m"dt" \033[0;36m"NR"\033[0m";
 	print head""sep""msg;
 }
 	'
