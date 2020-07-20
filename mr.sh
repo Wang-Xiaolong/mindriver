@@ -287,7 +287,7 @@ BEGIN {
 		gsub(/<nL>/,"\n",msg);
 		sep = "\n";
 	} else {
-		dt = strftime("%m/%d %H:%M");
+		dt = strftime("%m/%d %H:%M", $1);
 		gsub(/<nL>.*/,"...",msg);
 		sep = "\t"
 	}
