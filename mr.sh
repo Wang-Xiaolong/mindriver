@@ -289,7 +289,7 @@ BEGIN {
 		gsub(/<nL>/,"\n",msg);
 	else
 		gsub(/<nL>.*/,"...",msg);
-	dt = substr($1,3)
+	dt = substr($1,3,10)
 	if(mono == "true")
 		print "["dt"]"NR"\t"msg;
 	else
