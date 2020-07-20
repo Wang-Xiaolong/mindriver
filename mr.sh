@@ -124,6 +124,7 @@ mr_view() {
 	ln=$1
 
 	get_log_raw "$mr_file" $ln
+	[ $? -ne 0 ] && return
 	get_log_time
 	get_log_msg
 	dec_log_msg "$log_msg"
@@ -218,13 +219,15 @@ mr_edit() {
 	local ln=$1; shift; debug "ln=$ln"
 	local exps="$*"; debug "exps=$exps"
 
-	[ ! -f "$mr_file" ] && echo "$mr_file not found!" && return
-	local old=$(sed -n -e "${ln}p" $mr_file)
-	[ -z "$old" ] && echo "Line $ln not found!" && return
-	local old_ts=$(sed -e 's/\(^[0-9]\+<nF>\).*/\1/' <<< $old)
-	local old_msg=$(sed 's/^[0-9]\+<nF>//' <<< $old)
-	old_msg=${old_msg//<nL>/$'\n'}
-	debug "old_ts=$old_ts old_msg=$old_msg"
+	
+#	[ ! -f "$mr_file" ] && echo "$mr_file not found!" && return
+#	local old=$(sed -n -e "${ln}p" $mr_file)
+#	[ -z "$old" ] && echo "Line $ln not found!" && return
+#	local old_ts=$(sed -e 's/\(^[0-9]\+<nF>\).*/\1/' <<< $old)
+#	local old_msg=$(sed 's/^[0-9]\+<nF>//' <<< $old)
+#	old_msg=${old_msg//<nL>/$'\n'}
+#	debug "old_ts=$old_ts old_msg=$old_msg"
+	
 
 	if [ -z "$exps" ]; then
 		tempf=$(mktemp -u -t mr.XXXXXXXX.mt)
