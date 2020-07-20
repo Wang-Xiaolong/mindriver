@@ -63,7 +63,7 @@ mr_init() {
 	local message="$*"; debug "message=$message"
 	
 	local mr_sh=$(realpath $BASH_SOURCE); debug "mr_sh=$mr_sh"
-	alias $mr_cmd="$mr_sh"; vecho "Command alias $mr_cmd was setup."
+	alias $mr_cmd="$mr_sh"; echo "Command alias $mr_cmd was setup."
 	alias ${mr_cmd}init=". $mr_sh init"
 	alias ${mr_cmd}a="$mr_sh a"
 	alias ${mr_cmd}l="$mr_sh l"
@@ -79,6 +79,31 @@ mr_init() {
 
 	[ $shell == true ] && mr_shell
 }
+#=== FILE ======================================================================
+mr_log=''
+mr_log() { # $1=file $2=ln
+	[ ! -f "$1" ] && echo "$1 not found!" && return 1
+	mr_log=$(sed -n -e "${2}p" $1)
+	[ -z "$mr_log" ] && echo "Line $2 not found!" && return 2
+}
+mr_log_time=''
+mr_log_time() { mr_log_time=$(sed -e 's/\(^[0-9]\+<nF>\).*/\1/' <<< $mr_log); }
+mr_log_msg=''
+mr_log_msg() { mr_log_msg=$(sed 's/^[0-9]\+<nF>//' <<< $mr_log); }
+mr_log_demsg=''
+mr_log_demsg() { mr_log_demsg=${1//<nL>/$'\n'}; }
+mr_log_enmsg=''
+mr_log_enmsg() { mr_log_enmsg=${1//$'\n'/<nL>}; }
+
+#=== VIEW ======================================================================
+usage_view() {
+	cat<<-EOF
+Usage: mr view [OPTION]... [LN]...
+Arguments:
+  -f, --file=FILE
+	EOF
+}
+
 #=== ADD =======================================================================
 usage_add() {
 	cat<<-EOF
