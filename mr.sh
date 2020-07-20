@@ -82,9 +82,11 @@ mr_init() {
 #=== FILE ======================================================================
 log_raw=''
 get_log_raw() { # $1=file $2=ln
+	debug "get_log_raw($1, $2)"
 	[ ! -f "$1" ] && echo "$1 not found!" && return 1
-	log_raw=$(sed -n -e "${2}p" $1)
+	log_raw=$(sed -n -e "${2}p" $1); debug "log_raw=$log_raw"
 	[ -z "$log_raw" ] && echo "Line $2 not found!" && return 2
+	return 0
 }
 log_nomsg=''
 get_log_nomsg() { log_nomsg=$(sed -e 's/\(^[0-9]\+<nF>\).*/\1/' <<< $log_raw); }
@@ -96,6 +98,17 @@ dec_log_msg=''
 dec_log_msg() { dec_log_msg=${1//<nL>/$'\n'}; }
 enc_log_msg=''
 enc_log_msg() { enc_log_msg=${1//$'\n'/<nL>}; }
+new_log_msg=''
+edit_log_msg() { # $1=old_msg
+	local tempf=$(mktemp -u -t mr.XXXXXXXX.mt)
+	[ -n "$1" ] && echo "$1" > $tempf
+	vim $tempf
+	[ -f $tempf ] && new_log_msg=$(cat $tempf) || return 1
+	rm -f $tempf
+	[ -n "$1" ] && [ "$1" == "$new_log_msg" ] \
+		&& echo "No change." && return 2
+	return 0
+}
 
 #=== VIEW ======================================================================
 usage_view() {
@@ -176,11 +189,9 @@ mr_add() {
 	fi
 
 	if [ -z "$message" ]; then
-		tempf=$(mktemp -u -t mr.XXXXXXXX.mt)
-		vim $tempf
-		[ -f $tempf ] && message=$(cat $tempf) || return
-		rm -f $tempf
-		debug "message=$message"
+		edit_log_msg
+		[ $? -ne 0 ] && return; debug "new_log_msg=$new_log_msg"
+		message=$new_log_msg
 	fi
 	if [ -z $(echo $message | tr -d '[:space:]') ]; then # empty?
 		echo "Empty message, cancel."
@@ -219,39 +230,30 @@ mr_edit() {
 	local ln=$1; shift; debug "ln=$ln"
 	local exps="$*"; debug "exps=$exps"
 
-	
-#	[ ! -f "$mr_file" ] && echo "$mr_file not found!" && return
-#	local old=$(sed -n -e "${ln}p" $mr_file)
-#	[ -z "$old" ] && echo "Line $ln not found!" && return
-#	local old_ts=$(sed -e 's/\(^[0-9]\+<nF>\).*/\1/' <<< $old)
-#	local old_msg=$(sed 's/^[0-9]\+<nF>//' <<< $old)
-#	old_msg=${old_msg//<nL>/$'\n'}
-#	debug "old_ts=$old_ts old_msg=$old_msg"
-	
+	get_log_raw "$mr_file" $ln
+	[ $? -ne 0 ] && return; debug "log_raw=$log_raw"
+	get_log_nomsg; debug "log_nomsg=$log_nomsg"
+	get_log_msg; debug "log_msg=$log_msg"
+	dec_log_msg $log_msg; debug "dec_log_msg=$dec_log_msg"
 
 	if [ -z "$exps" ]; then
-		tempf=$(mktemp -u -t mr.XXXXXXXX.mt)
-		echo "$old_msg" > $tempf
-		vim $tempf
-		[ -f $tempf ] && message=$(cat $tempf) || return
-		rm -f $tempf
-		debug "message=$message"
-		local msg="${message//$'\n'/<nL>}"; debug "msg=$msg"
-		[ "$old_msg" == "$message" ] && echo "Not modified." && return
-		sed -i -e "${ln}c $old_ts$msg" $mr_file
+		edit_log_msg "$dec_log_msg"
+		[ $? -ne 0 ] && return; debug "new_log_msg=$new_log_msg"
+		enc_log_msg "$new_log_msg"; debug "enc_log_msg=$enc_log_msg"
+		sed -i -e "${ln}c $log_nomsg$enc_log_msg" $mr_file
 	else
 		local exp=""
 		for arg in "$@"; do
 			exp="$exp"$'\n'"$arg"
-		done
-		debug "exp=$exp"
-		sed -e "$exp" <<< $old_msg
+		done; debug "exp=$exp"
+		local new_msg; new_msg=$(sed -e "$exp" <<< $dec_log_msg)
+		  # if write in 1 sentense, #? will be of cmd 'local', 0
 		[ $? -ne 0 ] && return
+		echo "The result log would be:"; echo "$new_msg"
 		read -p "OK(y/n)? " -n 1 -r
 		[[ ! $REPLY =~ ^[Yy]$ ]] && return
-		local new_msg=$(sed -e "$exp" <<< $old_msg)
-		new_msg=${new_msg//$'\n'/<nL>}
-		sed -i -e "${ln}c $old_ts$new_msg" $mr_file
+		enc_log_msg "$new_msg"; debug "enc_log_msg=$enc_log_msg"
+		sed -i -e "${ln}c $log_nomsg$enc_log_msg" $mr_file
 	fi
 }
 #=== LOG =======================================================================
