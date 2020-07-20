@@ -127,7 +127,7 @@ mr_view() {
 	get_log_time
 	get_log_msg
 	dec_log_msg "$log_msg"
-	date -d "$log_time" "+[%Y-%m-%d(WW%U.%w) %H:%M:%S]"
+	date -d "@$log_time" "+[%Y-%m-%d (ww%U.%w) %H:%M:%S]"
 	echo "$dec_log_msg"
 }
 
@@ -283,7 +283,7 @@ BEGIN {
 {
 	msg = $2
 	if(verbose == "true") {
-		dt = strftime("%Y-%m-%d (WW%U.%w) %H:%M:%S", $1)
+		dt = strftime("[%Y-%m-%d (ww%U.%w) %H:%M:%S]", $1)
 		gsub(/<nL>/,"\n",msg);
 		sep = "\n";
 	} else {
@@ -292,7 +292,7 @@ BEGIN {
 		sep = "\t"
 	}
 	if(mono == "true")
-		head = "["dt"] "NR;
+		head = dt" "NR;
 	else
 		head = "\033[0;32m"dt" \033[0;36m"NR"\033[0m";
 	print head""sep""msg;
