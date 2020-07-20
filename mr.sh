@@ -289,6 +289,7 @@ BEGIN {
 	} else {
 		dt = strftime("%m/%d %H:%M", $1);
 		gsub(/<nL>.*/,"...",msg);
+		gsub(/<mt.*>/,"",msg);
 		sep = "\t"
 	}
 	if(mono == "true")
