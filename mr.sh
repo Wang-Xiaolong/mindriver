@@ -234,7 +234,7 @@ mr_edit() {
 	[ $? -ne 0 ] && return; debug "log_raw=$log_raw"
 	get_log_nomsg; debug "log_nomsg=$log_nomsg"
 	get_log_msg; debug "log_msg=$log_msg"
-	dec_log_msg $log_msg; debug "dec_log_msg=$dec_log_msg"
+	dec_log_msg "$log_msg"; debug "dec_log_msg=$dec_log_msg"
 
 	if [ -z "$exps" ]; then
 		edit_log_msg "$dec_log_msg"
