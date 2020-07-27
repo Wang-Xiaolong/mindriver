@@ -91,6 +91,17 @@ get_log() { # $1=file $2=ln return:0/1/2,mrLOG
 get_nomsg() { sed -e 's/\(^[0-9]\+<nF>\).*/\1/' <<< $mrLOG; }
 get_ts() { sed -e 's/\(^[0-9]\+\).*/\1/' <<< $mrLOG; }
 get_msg() { sed -e 's/^[0-9]\+<nF>//' -e 's/<nL>/\n/' <<< $mrLOG; }
+mrMSG=''
+edit_msg() { # $1=old_msg
+	local tempf=$(mktemp -u -t mr.XXXXXXXX.mt)
+	[ -n "$1" ] && echo "$1" > $tempf
+	vim $tempf
+	[ -f $tempf ] && mrMSG=$(cat $tempf) || return 1
+	rm -f $tempf
+	[ -n "$1" ] && [ "$1" == "$mrMSG" ] && echo "No change." && return 2
+	return 0
+}
+
 log_msg=''
 get_log_msg() { log_msg=$(sed 's/^[0-9]\+<nF>//' <<< $mrLOG); }
 dec_log_msg=''
@@ -187,9 +198,9 @@ mr_add() {
 	fi
 
 	if [ -z "$message" ]; then
-		edit_log_msg
-		[ $? -ne 0 ] && return; debug "new_log_msg=$new_log_msg"
-		message=$new_log_msg
+		edit_msg #->mrMSG
+		[ $? -ne 0 ] && return; debug "mrMSG=$mrMSG"
+		message=$mrMSG
 	fi
 	if [ -z $(echo $message | tr -d '[:space:]') ]; then # empty?
 		echo "Empty message, cancel."
