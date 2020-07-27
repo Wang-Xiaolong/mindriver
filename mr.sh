@@ -80,20 +80,20 @@ mr_init() {
 	[ $shell == true ] && mr_shell
 }
 #=== FILE ======================================================================
-log_raw=''
-get_log_raw() { # $1=file $2=ln
-	debug "get_log_raw($1, $2)"
+mrLOG=''
+get_log() { # $1=file $2=ln
+	debug "get_log($1, $2)"
 	[ ! -f "$1" ] && echo "$1 not found!" && return 1
-	log_raw=$(sed -n -e "${2}p" $1); debug "log_raw=$log_raw"
-	[ -z "$log_raw" ] && echo "Line $2 not found!" && return 2
+	mrLOG=$(sed -n -e "${2}p" $1); debug "mrLOG=$mrLOG"
+	[ -z "$mrLOG" ] && echo "Line $2 not found!" && return 2
 	return 0
 }
 log_nomsg=''
-get_log_nomsg() { log_nomsg=$(sed -e 's/\(^[0-9]\+<nF>\).*/\1/' <<< $log_raw); }
+get_log_nomsg() { log_nomsg=$(sed -e 's/\(^[0-9]\+<nF>\).*/\1/' <<< $mrLOG); }
 log_time=''
-get_log_time() { log_time=$(sed -e 's/\(^[0-9]\+\).*/\1/' <<< $log_raw); }
+get_log_time() { log_time=$(sed -e 's/\(^[0-9]\+\).*/\1/' <<< $mrLOG); }
 log_msg=''
-get_log_msg() { log_msg=$(sed 's/^[0-9]\+<nF>//' <<< $log_raw); }
+get_log_msg() { log_msg=$(sed 's/^[0-9]\+<nF>//' <<< $mrLOG); }
 dec_log_msg=''
 dec_log_msg() { dec_log_msg=${1//<nL>/$'\n'}; }
 enc_log_msg=''
@@ -136,7 +136,7 @@ mr_view() {
 	done
 	ln=$1
 
-	get_log_raw "$mr_file" $ln
+	get_log "$mr_file" $ln
 	[ $? -ne 0 ] && return
 	get_log_time
 	get_log_msg
@@ -230,8 +230,8 @@ mr_edit() {
 	local ln=$1; shift; debug "ln=$ln"
 	local exps="$*"; debug "exps=$exps"
 
-	get_log_raw "$mr_file" $ln
-	[ $? -ne 0 ] && return; debug "log_raw=$log_raw"
+	get_log "$mr_file" $ln
+	[ $? -ne 0 ] && return; debug "mrLOG=$mrLOG"
 	get_log_nomsg; debug "log_nomsg=$log_nomsg"
 	get_log_msg; debug "log_msg=$log_msg"
 	dec_log_msg "$log_msg"; debug "dec_log_msg=$dec_log_msg"
