@@ -88,10 +88,8 @@ get_log() { # $1=file $2=ln
 	[ -z "$mrLOG" ] && echo "Line $2 not found!" && return 2
 	return 0
 }
-log_nomsg=''
-get_log_nomsg() { log_nomsg=$(sed -e 's/\(^[0-9]\+<nF>\).*/\1/' <<< $mrLOG); }
-log_time=''
-get_log_time() { log_time=$(sed -e 's/\(^[0-9]\+\).*/\1/' <<< $mrLOG); }
+get_nomsg() { sed -e 's/\(^[0-9]\+<nF>\).*/\1/' <<< $mrLOG; }
+get_ts() { sed -e 's/\(^[0-9]\+\).*/\1/' <<< $mrLOG; }
 log_msg=''
 get_log_msg() { log_msg=$(sed 's/^[0-9]\+<nF>//' <<< $mrLOG); }
 dec_log_msg=''
@@ -138,10 +136,10 @@ mr_view() {
 
 	get_log "$mr_file" $ln
 	[ $? -ne 0 ] && return
-	get_log_time
+	local ts=$(get_ts)
 	get_log_msg
 	dec_log_msg "$log_msg"
-	date -d "@$log_time" "+[%Y-%m-%d (ww%U.%w) %H:%M:%S]"
+	date -d "@$ts" "+[%Y-%m-%d (ww%U.%w) %H:%M:%S]"
 	echo "$dec_log_msg"
 }
 
@@ -232,7 +230,7 @@ mr_edit() {
 
 	get_log "$mr_file" $ln
 	[ $? -ne 0 ] && return; debug "mrLOG=$mrLOG"
-	get_log_nomsg; debug "log_nomsg=$log_nomsg"
+	local nomsg=$(get_nomsg); debug "nomsg=$nomsg"
 	get_log_msg; debug "log_msg=$log_msg"
 	dec_log_msg "$log_msg"; debug "dec_log_msg=$dec_log_msg"
 
@@ -240,7 +238,7 @@ mr_edit() {
 		edit_log_msg "$dec_log_msg"
 		[ $? -ne 0 ] && return; debug "new_log_msg=$new_log_msg"
 		enc_log_msg "$new_log_msg"; debug "enc_log_msg=$enc_log_msg"
-		sed -i -e "${ln}c $log_nomsg$enc_log_msg" $mr_file
+		sed -i -e "${ln}c $nomsg$enc_log_msg" $mr_file
 	else
 		local exp=""
 		for arg in "$@"; do
@@ -253,7 +251,7 @@ mr_edit() {
 		read -p "OK(y/n)? " -n 1 -r
 		[[ ! $REPLY =~ ^[Yy]$ ]] && return
 		enc_log_msg "$new_msg"; debug "enc_log_msg=$enc_log_msg"
-		sed -i -e "${ln}c $log_nomsg$enc_log_msg" $mr_file
+		sed -i -e "${ln}c $nomsg$enc_log_msg" $mr_file
 	fi
 }
 #=== LOG =======================================================================
