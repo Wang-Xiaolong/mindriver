@@ -254,22 +254,19 @@ mr_edit() {
 	if [ -z "$exps" ]; then
 		edit_msg "$msg" #->mrMSG
 		[ $? -ne 0 ] && return; debug "mrMSG=$mrMSG"
-		mrLOG=$(set_msg); debug "mrLOG=$mrLOG"
-		sed -i -e "${ln}c $mrLOG" $mr_file
 	else
 		local exp=""
 		for arg in "$@"; do
 			exp="$exp"$'\n'"$arg"
 		done; debug "exp=$exp"
-		local new_msg; new_msg=$(sed -e "$exp" <<< $dec_log_msg)
-		  # if write in 1 sentense, #? will be of cmd 'local', 0
+		mrMSG=$(sed -e "$exp" <<< $msg)
 		[ $? -ne 0 ] && return
-		echo "The result log would be:"; echo "$new_msg"
+		echo "The result log would be:"; echo "$mrMSG"
 		read -p "OK(y/n)? " -n 1 -r
 		[[ ! $REPLY =~ ^[Yy]$ ]] && return
-		enc_log_msg "$new_msg"; debug "enc_log_msg=$enc_log_msg"
-		sed -i -e "${ln}c $nomsg$enc_log_msg" $mr_file
 	fi
+	mrLOG=$(set_msg); debug "mrLOG=$mrLOG"
+	sed -i -e "${ln}c $mrLOG" $mr_file
 }
 #=== LOG =======================================================================
 usage_log() {
