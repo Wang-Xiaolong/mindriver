@@ -90,6 +90,7 @@ get_log() { # $1=file $2=ln return:0/1/2,mrLOG
 }
 get_nomsg() { sed -e 's/\(^[0-9]\+<nF>\).*/\1/' <<< $mrLOG; }
 get_ts() { sed -e 's/\(^[0-9]\+\).*/\1/' <<< $mrLOG; }
+get_msg() { sed -e 's/^[0-9]\+<nF>//' -e 's/<nL>/\n/' <<< $mrLOG; }
 log_msg=''
 get_log_msg() { log_msg=$(sed 's/^[0-9]\+<nF>//' <<< $mrLOG); }
 dec_log_msg=''
@@ -137,10 +138,9 @@ mr_view() {
 	get_log "$mr_file" $ln
 	[ $? -ne 0 ] && return
 	local ts=$(get_ts)
-	get_log_msg
-	dec_log_msg "$log_msg"
+	local msg=$(get_msg)
 	date -d "@$ts" "+[%Y-%m-%d (ww%U.%w) %H:%M:%S]"
-	echo "$dec_log_msg"
+	echo "$msg"
 }
 
 #=== ADD =======================================================================
