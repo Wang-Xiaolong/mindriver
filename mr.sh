@@ -90,7 +90,7 @@ get_log() { # $1=file $2=ln return:0/1/2,mrLOG
 }
 get_nomsg() { sed -e 's/\(^[0-9]\+<nF>\).*/\1/' <<< $mrLOG; }
 get_ts() { sed -e 's/\(^[0-9]\+\).*/\1/' <<< $mrLOG; }
-get_msg() { sed -e 's/^[0-9]\+<nF>//' -e 's/<nL>/\n/' <<< $mrLOG; }
+get_msg() { sed -e 's/^[0-9]\+<nF>//' -e 's/<nL>/\n/g' <<< $mrLOG; }
 mrMSG=''
 edit_msg() { # $1=old_msg
 	local tempf=$(mktemp -u -t mr.XXXXXXXX.mt)
@@ -101,6 +101,13 @@ edit_msg() { # $1=old_msg
 	[ -n "$1" ] && [ "$1" == "$mrMSG" ] && echo "No change." && return 2
 	return 0
 }
+set_msg() { # $1=msg, if omitted, use $mrMSG; based on mrLOG
+	local msg
+	[ -n "$1" ] && msg="$1" || msg="$mrMSG"
+	nomsg=$(get_nomsg)
+	echo "$nomsg${msg//$'\n'/<nL>}"
+}
+
 
 log_msg=''
 get_log_msg() { log_msg=$(sed 's/^[0-9]\+<nF>//' <<< $mrLOG); }
@@ -236,20 +243,19 @@ mr_edit() {
 		*) echo "Unknown option: $1"; return;;
 		esac
 	done
+	[ -z "$1" ] && echo "No log# specified!" && return
 	local ln=$1; shift; debug "ln=$ln"
 	local exps="$*"; debug "exps=$exps"
 
 	get_log "$mr_file" $ln
 	[ $? -ne 0 ] && return; debug "mrLOG=$mrLOG"
-	local nomsg=$(get_nomsg); debug "nomsg=$nomsg"
-	get_log_msg; debug "log_msg=$log_msg"
-	dec_log_msg "$log_msg"; debug "dec_log_msg=$dec_log_msg"
+	local msg=$(get_msg); debug "msg=$msg"
 
 	if [ -z "$exps" ]; then
-		edit_log_msg "$dec_log_msg"
-		[ $? -ne 0 ] && return; debug "new_log_msg=$new_log_msg"
-		enc_log_msg "$new_log_msg"; debug "enc_log_msg=$enc_log_msg"
-		sed -i -e "${ln}c $nomsg$enc_log_msg" $mr_file
+		edit_msg "$msg" #->mrMSG
+		[ $? -ne 0 ] && return; debug "mrMSG=$mrMSG"
+		mrLOG=$(set_msg); debug "mrLOG=$mrLOG"
+		sed -i -e "${ln}c $mrLOG" $mr_file
 	else
 		local exp=""
 		for arg in "$@"; do
