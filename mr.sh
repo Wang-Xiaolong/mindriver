@@ -81,7 +81,7 @@ mr_init() {
 }
 #=== FILE ======================================================================
 mrLOG=''
-get_log() { # $1=file $2=ln
+get_log() { # $1=file $2=ln return:0/1/2,mrLOG
 	debug "get_log($1, $2)"
 	[ ! -f "$1" ] && echo "$1 not found!" && return 1
 	mrLOG=$(sed -n -e "${2}p" $1); debug "mrLOG=$mrLOG"
