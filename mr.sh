@@ -102,29 +102,9 @@ edit_msg() { # $1=old_msg
 	return 0
 }
 set_msg() { # $1=msg, if omitted, use $mrMSG; based on mrLOG
-	local msg
-	[ -n "$1" ] && msg="$1" || msg="$mrMSG"
-	nomsg=$(get_nomsg)
+	local msg; [ -n "$1" ] && msg="$1" || msg="$mrMSG"
+	local nomsg=$(get_nomsg)
 	echo "$nomsg${msg//$'\n'/<nL>}"
-}
-
-
-log_msg=''
-get_log_msg() { log_msg=$(sed 's/^[0-9]\+<nF>//' <<< $mrLOG); }
-dec_log_msg=''
-dec_log_msg() { dec_log_msg=${1//<nL>/$'\n'}; }
-enc_log_msg=''
-enc_log_msg() { enc_log_msg=${1//$'\n'/<nL>}; }
-new_log_msg=''
-edit_log_msg() { # $1=old_msg
-	local tempf=$(mktemp -u -t mr.XXXXXXXX.mt)
-	[ -n "$1" ] && echo "$1" > $tempf
-	vim $tempf
-	[ -f $tempf ] && new_log_msg=$(cat $tempf) || return 1
-	rm -f $tempf
-	[ -n "$1" ] && [ "$1" == "$new_log_msg" ] \
-		&& echo "No change." && return 2
-	return 0
 }
 
 #=== VIEW ======================================================================
