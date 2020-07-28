@@ -110,6 +110,10 @@ append_msg() { # $1=msg, if omitted, use $mrMSG; based on mrLOG
 	local msg; [ -n "$1" ] && msg="$1" || msg="$mrMSG"
 	echo "$mrLOG<nL>${msg//$'\n'/<nL>}"
 }
+update_log() { # $1=file $2=ln $3=log or mrLOG if omitted
+	local log; [ -n "$3" ] && log="$3" || log="$mrLOG"
+	sed -i -e "$2c $log" $1
+}
 
 #=== VIEW ======================================================================
 usage_view() {
@@ -202,7 +206,7 @@ mr_add() {
 		get_log "$mr_file" $append
 		[ $? -ne 0 ] && return
 		mrLOG=$(append_msg "$message")
-		sed -i -e "${append}c $mrLOG" $mr_file
+		update_log "$mr_file" $append
 	fi
 }
 #=== EDIT ======================================================================
@@ -250,7 +254,7 @@ mr_edit() {
 		[[ ! $REPLY =~ ^[Yy]$ ]] && return
 	fi
 	mrLOG=$(set_msg); debug "mrLOG=$mrLOG"
-	sed -i -e "${ln}c $mrLOG" $mr_file
+	update_log "$mr_file" $ln
 }
 #=== LOG =======================================================================
 usage_log() {
