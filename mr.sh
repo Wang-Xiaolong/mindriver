@@ -106,6 +106,10 @@ set_msg() { # $1=msg, if omitted, use $mrMSG; based on mrLOG
 	local nomsg=$(get_nomsg)
 	echo "$nomsg${msg//$'\n'/<nL>}"
 }
+append_msg() { # $1=msg, if omitted, use $mrMSG; based on mrLOG
+	local msg; [ -n "$1" ] && msg="$1" || msg="$mrMSG"
+	echo "$mrLOG<nL>${msg//$'\n'/<nL>}"
+}
 
 #=== VIEW ======================================================================
 usage_view() {
@@ -195,10 +199,10 @@ mr_add() {
 		datestr=$(date '+%s')
 		echo "$datestr<nF>${message//$'\n'/<nL>}" >> $mr_file
 	else #append
-		local old=$(sed -n -e "${append}p" $mr_file)
-		[ -z "$old" ] && echo "No line#$append." && return
-		local msg="${message//$'\n'/<nL>}"; debug "msg=$msg"
-		sed -i -e "${append}c $old<nL>$msg" $mr_file
+		get_log "$mr_file" $append
+		[ $? -ne 0 ] && return
+		mrLOG=$(append_msg "$message")
+		sed -i -e "${append}c $mrLOG" $mr_file
 	fi
 }
 #=== EDIT ======================================================================
