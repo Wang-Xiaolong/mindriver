@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+#=== Sourced: INIT and CLEAN ===================================================
 if [[ $_ != $0 ]]; then # script is being sourced
 	if [ $# -eq 0 ]; then
 		./${BASH_SOURCE[0]#$PWD/}
@@ -67,6 +68,7 @@ if [[ $_ != $0 ]]; then # script is being sourced
 	return
 fi
 
+#=== PUBLIC FUNCTIONS ==========================================================
 usage() {
 	cat<<-EOF
 Mind River, in which logs float down, 
@@ -83,7 +85,6 @@ You can run 'mr <command> <-h|--help|-?>' to get the document of each command.
 	EOF
 }
 
-#=== PUBLIC FUNCTIONS ==========================================================
 debug() { [ $debug == true ] && >&2 echo "$@"; }
 # only "$@" can trans args properly, $@/$*/"$*" can't.
 str_trim() { echo "$1" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//'; }
