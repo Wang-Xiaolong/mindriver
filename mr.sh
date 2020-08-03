@@ -1,4 +1,71 @@
 #!/usr/bin/env bash
+if [[ $_ != $0 ]]; then # script is being sourced
+	if [ $# -eq 0 ]; then
+		./${BASH_SOURCE[0]#$PWD/}
+		return
+	fi
+	orig_args="$@"
+	for arg do
+		shift
+		case $arg in
+		'-?'|-h|--help) ./${BASH_SOURCE[0]#$PWD/} "$orig_args"
+			unset orig_args; return;;
+		--debug) mr_debug=true;;
+		*) set -- "$@" "$arg";;
+		esac
+	done; unset orig_args
+	[ "$mr_debug" == true ] && echo "Sourced mr: $@"
+
+	if [ "$1" == init ]; then
+		shift; [ "$mr_debug" == true ] && echo "mr_init()"
+		if [ $# -eq 0 ]; then
+			echo "Command alias:"
+			alias | grep $(basename $BASH_SOURCE)
+			echo "Current file: $MR_FILE"
+		fi
+
+		mr_params=$(getopt -o c:f: -l command:,file:,shell \
+			-n 'mr_init' -- "$@")
+		[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
+		eval set -- "$mr_params";
+		while : ; do
+			case "$1" in
+			-c|--command) mr_cmd="$2"; shift 2;;
+			-f|--file) mr_file="$2"; shift 2;;
+			--shell) mr_shell=true; shift;;
+			--) shift; break;;
+			*) echo "Unknown option: $1"; return;;
+			esac
+		done
+		if [ -n "$mr_cmd" ]; then
+			mr_sh=$(realpath $BASH_SOURCE)
+			alias $mr_cmd="$mr_sh"
+			alias ${mr_cmd}init=". $mr_sh init"
+			alias ${mr_cmd}f=". $mr_sh init -f"
+			alias ${mr_cmd}clean=". $mr_sh clean"
+			alias ${mr_cmd}a="$mr_sh a"
+			alias ${mr_cmd}l="$mr_sh l"
+			alias ${mr_cmd}lv="$mr_sh l -v"
+			alias ${mr_cmd}e="$mr_sh e"
+			export MR_CMD=$mr_cmd
+			echo "Command alias $mr_cmd was setup."
+			unset mr_sh mr_cmd
+		fi
+		if [ -n "$mr_file" ]; then
+			export MR_FILE=$(realpath $mr_file)
+			echo "Set $MR_FILE."
+			unset mr_file
+		fi
+	elif [ "$1" == clean ]; then
+		shift; [ $mr_debug == true ] && echo "mr_clean()"
+		unalias ${MR_CMD} ${MR_CMD}init ${MR_CMD}clean ${MR_CMD}f
+		unalias ${MR_CMD}a ${MR_CMD}l ${MR_CMD}lv unalias ${MR_CMD}e
+		export -n MR_CMD MR_FILE
+	else
+		echo "Unsupported sourced mode command $1."
+	fi
+	return
+fi
 
 usage() {
 	cat<<-EOF
