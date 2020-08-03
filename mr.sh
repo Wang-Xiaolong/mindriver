@@ -89,14 +89,22 @@ debug() { [ $debug == true ] && >&2 echo "$@"; }
 # only "$@" can trans args properly, $@/$*/"$*" can't.
 str_trim() { echo "$1" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//'; }
 
-#=== INIT ======================================================================
+#=== INIT and CLEAN's usage ====================================================
 usage_init() {
 	cat<<-EOF
-Usage: . ${BASH_SOURCE[0]#$PWD/} init [OPTION]... FILE [MESSAGE]...
-This command should be run in source mode before any other MindRiver command.
+Usage: . ${BASH_SOURCE[0]#$PWD/} init [OPTION]...
+This command should be "sourced".
 Arguments:
   -c, --command=CMD
+  -f, --file=FILE
       --shell
+	EOF
+}
+
+usage_clean() {
+	cat<<-EOF
+Usage: . ${BASH_SOURCE[0]#$PWD/} clean
+This command should be "sourced".
 	EOF
 }
 
@@ -339,8 +347,8 @@ process_command() {
 	[ $# -eq 0 ] && usage && return 0  #No arg, show usage
 
 	case "$1" in  #$1 is command
-	init) shift; [ $help_me != true ] && echo "Not sourced."
-		usage_init;;
+	init) shift; [ $help_me != true ] && echo "Not sourced."; usage_init;;
+	clean) shift; [ $help_me != true ] && echo "Not sourced."; usage_clean;;
 	a|add) shift; [ $help_me == true ] && usage_add || mr_add "$@";;
 	v|view) shift; [ $help_me == true ] && usage_view || mr_view "$@";;
 	e|ed|edit) shift; [ $help_me == true ] && usage_edit || mr_edit "$@";;
