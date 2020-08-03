@@ -4,11 +4,11 @@ if [[ $_ != $0 ]]; then # script is being sourced
 		./${BASH_SOURCE[0]#$PWD/}
 		return
 	fi
-	orig_args="$@"
+	orig_args=( "$@" )
 	for arg do
 		shift
 		case $arg in
-		'-?'|-h|--help) ./${BASH_SOURCE[0]#$PWD/} "$orig_args"
+		'-?'|-h|--help) ./${BASH_SOURCE[0]#$PWD/} "${orig_args[@]}"
 			unset orig_args; return;;
 		--debug) mr_debug=true;;
 		*) set -- "$@" "$arg";;
@@ -99,53 +99,6 @@ Arguments:
 	EOF
 }
 
-mr_init() {
-	if [[ "$0" != *"bash" ]]; then # $0 is path of bash indicate
-	# it runs in current shell (or source mode, ". mr.sh") to keep vars.
-  		echo "init should be run in source mode: '. $0 init'"
-		usage_init
-		export MR_FILE=Hello
-		return
-	fi
-
-	debug "mr_init($@) BASH_SOURCE=$BASH_SOURCE"
-	PARAMS=$(getopt -o c:f: -l command:,file:,shell -n 'mr_init' -- "$@")
-	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
-	eval set -- "$PARAMS"
-	local mr_cmd=mr; local shell=false
-	while : ; do
-		case "$1" in
-		-c|--command) mr_cmd="$2"; shift 2;;
-		--shell) shell=true; shift;;
-		--) shift; break;;
-		*) echo "Unknown option: $1"; return;;
-		esac
-	done
-	if [ -z $1 ]; then
-		alias | grep $(basename $BASH_SOURCE)
-		[ -n "$MR_FILE" ] && echo "MR_FILE=$MR_FILE"
-		return
-	fi
-	local mr_file="$1"; shift; debug "mr_file=$mr_file"
-	local message="$*"; debug "message=$message"
-	
-	local mr_sh=$(realpath $BASH_SOURCE); debug "mr_sh=$mr_sh"
-	alias $mr_cmd="$mr_sh"; echo "Command alias $mr_cmd was setup."
-	alias ${mr_cmd}init=". $mr_sh init"
-	alias ${mr_cmd}a="$mr_sh a"
-	alias ${mr_cmd}l="$mr_sh l"
-	alias ${mr_cmd}lv="$mr_sh l -v"
-	alias ${mr_cmd}e="$mr_sh e"
-
-	local mr_dir=$(dirname $mr_file); debug "mr_dir=$mr_dir"
-	[ ! -d "$mr_dir" ] && mkdir -p "$mr_dir" &&\
-		echo "Directory $mr_dir not exist, create it."
-	export MR_FILE=$(realpath $mr_file); debug "MR_FILE=$MR_FILE"
-	[ -n "$message" ] && mr_add "$message" &&\
-		echo "Add to $mr_file: $message"
-
-	[ $shell == true ] && mr_shell
-}
 #=== FILE ======================================================================
 mrLOG=''
 get_log() { # $1=file $2=ln return:0/1/2,mrLOG
@@ -385,7 +338,8 @@ process_command() {
 	[ $# -eq 0 ] && usage && return 0  #No arg, show usage
 
 	case "$1" in  #$1 is command
-	init) shift; [ $help_me == true ] && usage_init || mr_init "$@";;
+	init) shift; [ $help_me != true ] && echo "Not sourced."
+		usage_init;;
 	a|add) shift; [ $help_me == true ] && usage_add || mr_add "$@";;
 	v|view) shift; [ $help_me == true ] && usage_view || mr_view "$@";;
 	e|ed|edit) shift; [ $help_me == true ] && usage_edit || mr_edit "$@";;
@@ -427,22 +381,6 @@ for arg in "$@"; do
 	*) args+=("$arg");; # collect args other than help/debug
 	esac
 done
-
-if [[ $help_me == false && "$1" != init && "$1" != cd ]]; then
-# help_me will always be processed (because showing help need nearly nothing)
-# init will always be processed
-# other commands need at least a working dir, and should run in child shell
-	if [[ "$0" == *"bash" ]]; then # source mode: `. mr.sh` or source mr.sh`
-		echo "mr* command should not run in source mode."
-		return # exit in source mode will exit the shell
-	fi # common (non-source) mode below
-	if [[ -z "$MR_FILE" ]]; then
-		echo "No dir specified with MR_FILE."
-		echo "Please run '. $0 init' first."
-		usage_init
-		exit 0
-	fi
-fi
 
 [ -z $(command -v getopt) ] && echo "No getopt command." && exit 1
 process_command "${args[@]}"
