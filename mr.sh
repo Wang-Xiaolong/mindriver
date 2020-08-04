@@ -143,6 +143,31 @@ update_log() { # $1=file $2=ln $3=log or mrLOG if omitted
 	local log; [ -n "$3" ] && log="$3" || log="$mrLOG"
 	sed -i -e "$2c $log" $1
 }
+insert_log() { # $1=file  Insert mrLOG into the file
+	local ts=$(get_ts)
+	local ln=$(cat $1 | awk -v ts=$ts '
+BEGIN {
+	FS="<nF>"
+}
+{
+	if ($1 > ts) {
+		print NR;
+		exit
+	}
+}
+	'); debug "ln=$ln"
+	if [ -n "$ln" ]; then
+		sed -i -e "${ln}i $mrLOG" "$1"
+	else
+		echo "$mrLOG" >> "$1"
+	fi
+}
+delete_log() { # $1=file $2=ln
+	debug "1:$1 2:$2"
+	sed -i -e "$2d" $1
+	debug "deleted"
+}
+
 
 #=== VIEW ======================================================================
 usage_view() {
@@ -334,7 +359,22 @@ BEGIN {
 }
 	'
 }
+#=== MOVE ======================================================================
+usage_move() {
+	cat<<-EOF
+Usage: mr move [OPTION]... [FILE]...
+Arguments:
+  -f, --file=FILE
+	EOF
+}
 
+mr_move() {
+	debug "mr_move($@)"
+	get_log "$MR_FILE" "$1"
+	insert_log "$2"
+	debug "delete"
+	delete_log "$MR_FILE" "$1"
+}
 #=== SHELL =====================================================================
 usage_shell() {  #heredoc
 	cat<<-EOF
@@ -347,13 +387,14 @@ process_command() {
 	[ $# -eq 0 ] && usage && return 0  #No arg, show usage
 
 	case "$1" in  #$1 is command
-	init) shift; [ $help_me != true ] && echo "Not sourced."; usage_init;;
-	clean) shift; [ $help_me != true ] && echo "Not sourced."; usage_clean;;
+	init) [ $help_me != true ] && echo "Not sourced."; usage_init;;
+	clean) [ $help_me != true ] && echo "Not sourced."; usage_clean;;
 	a|add) shift; [ $help_me == true ] && usage_add || mr_add "$@";;
 	v|view) shift; [ $help_me == true ] && usage_view || mr_view "$@";;
 	e|ed|edit) shift; [ $help_me == true ] && usage_edit || mr_edit "$@";;
 	l|log) shift; [ $help_me == true ] && usage_log || mr_log "$@";;
 	ls) shift; [ $help_me == true ] && usage_list || mr_list "$@";;
+	m|mv|move) shift; [ $help_me == true ] && usage_move || mr_move "$@";;
 	sh|shell) [ $in_shell == false ] && mr_shell "$@"\
 		|| echo "We are already in the mind river shell.";;
 	exit) [ $in_shell == true ] && in_shell=false \
