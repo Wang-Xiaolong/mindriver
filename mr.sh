@@ -362,7 +362,9 @@ BEGIN {
 #=== MOVE ======================================================================
 usage_move() {
 	cat<<-EOF
-Usage: mr move [OPTION]... [FILE]...
+Usage: mr move [OPTION]... LN... DEST
+Move log(s) specified by LN(s) to the log file specified by DEST.
+
 Arguments:
   -f, --file=FILE
 	EOF
@@ -370,10 +372,46 @@ Arguments:
 
 mr_move() {
 	debug "mr_move($@)"
-	get_log "$MR_FILE" "$1"
-	insert_log "$2"
-	debug "delete"
-	delete_log "$MR_FILE" "$1"
+	PARAMS=$(getopt -o f: -l file: -n 'mr_move' -- "$@")
+	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
+	eval set -- "$PARAMS"
+	local mr_file=$MR_FILE
+	while : ; do
+		case "$1" in
+		-f|--file) mr_file=$2; shift 2;;
+		--) shift; break;;
+		*) echo "Unknown option: $1"; return;;
+		esac
+	done
+	[ -z "$mr_file" ] && echo "No file specified." && return
+	local args=( $@ ); debug "args=${args[@]}"
+	local len=${#args[@]}; debug "len=$len"
+	[ "$len" -lt 2 ] && echo "Not enough arguments." && return
+	local dest=${args[$len-1]}; debug "dest=$dest"
+	[ ! -f "$dest" ] && echo "$dest doesn't exist, will be created."
+	echo "These logs will be moved to $dest:"
+	local lns=( ${args[@]:0:$len-1} ); debug "lns=${lns[@]}"
+	local p_sed=''; local d_sed=''; local sep=''
+	for ln in "${lns[@]}"; do
+		debug "ln=$ln"
+		local nr_awk=$(echo $ln | sed 's/\([0-9]\+\)/NR==\1/g')
+		local dump_awk='BEGIN { FS="<nF>" }'" $nr_awk"'{
+	dt = strftime("%m/%d %H:%M", $1);
+	msg = $2
+	gsub(/<nL>.*/,"...",msg);
+	gsub(/<mt.*>/,"",msg);
+	print "\033[0;32m"dt" \033[0;36m"NR"\033[0m\t"msg;}'
+		debug "dump_awk=$dump_awk"
+		awk "$dump_awk" "$mr_file"
+		p_sed+="$sep${ln}p"
+		d_sed+="$sep${ln}d"
+		sep="; "
+	done; debug "p_sed=$p_sed"
+	read -p "OK(y/n)? " -n 1 -r
+	[[ ! $REPLY =~ ^[Yy]$ ]] && return
+	sed -n "$p_sed" "$mr_file" >> "$dest"
+	sort -o "$dest" -n -t '<' -k1 "$dest"
+	sed -i "$d_sed" "$mr_file"
 }
 #=== SHELL =====================================================================
 usage_shell() {  #heredoc
