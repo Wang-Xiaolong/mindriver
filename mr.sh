@@ -48,6 +48,7 @@ if [[ $_ != $0 ]]; then # script is being sourced
 			alias ${mr_cmd}l="$mr_sh l"
 			alias ${mr_cmd}lv="$mr_sh l -v"
 			alias ${mr_cmd}e="$mr_sh e"
+			alias ${mr_cmd}m="$mr_sh m"
 			export MR_CMD=$mr_cmd
 			echo "Command alias $mr_cmd was setup."
 			unset mr_sh mr_cmd
