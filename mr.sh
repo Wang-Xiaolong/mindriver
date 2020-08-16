@@ -286,6 +286,7 @@ mr_edit() {
 		*) echo "Unknown option: $1"; return;;
 		esac
 	done
+	[ -z "$mr_file" ] && echo "No file specified." && return
 	[ -z "$1" ] && echo "No log# specified!" && return
 	local ln=$1; shift; debug "ln=$ln"
 	local exps="$*"; debug "exps=$exps"
