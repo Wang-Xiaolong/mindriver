@@ -315,29 +315,15 @@ mr_edit() {
 #=== LOG =======================================================================
 usage_log() {
 	cat<<-EOF
-Usage: mr add [OPTION]... [FILE]...
+Usage: mr log [OPTION]... [FILE or DIR]
 Arguments:
   -n, --mono
+  -v, --verbose
 	EOF
 }
 
-mr_log() {
-	PARAMS=`getopt -o nv -l mono,verbose -n 'mr_list' -- "$@"`
-	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
-	eval set -- "$PARAMS"
-	debug "mr_list($@)"
-	local mono=false; local verbose=false;
-	while : ; do
-		case "$1" in
-		-n|--mono) mono=true; shift;;
-		-v|--verbose) verbose=true; shift;;
-		--) shift; break;;
-		*) echo "Unknown option: $1"; return;;
-		esac
-	done
-	[ ! -f "$MR_FILE" ] && echo "$(basename $MR_FILE) is not created yet."\
-		&& return
-	cat $MR_FILE | awk -v verbose="$verbose" -v mono="$mono" '
+mr_log_file() { # $1=file $2=verbose $3=mono
+	awk -v verbose="$2" -v mono="$3" '
 BEGIN {
 	FS="<nF>"
 }
@@ -359,7 +345,34 @@ BEGIN {
 		head = "\033[0;32m"dt" \033[0;36m"NR"\033[0m";
 	print head""sep""msg;
 }
-	'
+	' "$1"; return 0
+}
+
+mr_log_dir() { # $1=file $2=verbose $3=mono
+	debug "mr_log_dir($@)"
+	return 0
+}
+
+mr_log() {
+	PARAMS=`getopt -o nv -l mono,verbose -n 'mr_list' -- "$@"`
+	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
+	eval set -- "$PARAMS"
+	debug "mr_log($@)"
+	local mono=false; local verbose=false; local mr_file=$MR_FILE
+	while : ; do
+		case "$1" in
+		-n|--mono) mono=true; shift;;
+		-v|--verbose) verbose=true; shift;;
+		--) shift; break;;
+		*) echo "Unknown option: $1"; return;;
+		esac
+	done
+	[ $# -gt 1 ] && echo "Support only 1 file or dir." && return
+	[ $# -eq 1 ] && mr_file=$1
+	[ -z "$mr_file" ] && mr_file='.'; debug "$mr_file=$mr_file"
+	[ -f "$mr_file" ] && mr_log_file "$mr_file" $verbose $mono && return
+	[ -d "$mr_file" ] && mr_log_dir "$mr_file" $verbose $mono && return
+	echo "$mr_file doesn't exist."
 }
 #=== MOVE ======================================================================
 usage_move() {
