@@ -323,11 +323,11 @@ Arguments:
 }
 
 mr_log_file() { # $1=file $2=verbose $3=mono
-	awk -v verbose="$2" -v mono="$3" '
+	awk -v v="$2" -v n="$3" '
 BEGIN { FS="<nF>" }
 {
 	msg = $2
-	if(verbose == "true") {
+	if(v == "true") {
 		dt = strftime("[%Y-%m-%d (ww%U.%w) %H:%M:%S]", $1)
 		gsub(/<nL>/,"\n",msg);
 		sep = "\n";
@@ -337,7 +337,7 @@ BEGIN { FS="<nF>" }
 		gsub(/<mt.*>/,"",msg);
 		sep = "\t"
 	}
-	if(mono == "true")
+	if(n == "true")
 		head = dt" "NR;
 	else
 		head = "\033[0;32m"dt" \033[0;36m"NR"\033[0m";
@@ -383,7 +383,6 @@ BEGIN { FS="<nF>" }
 	else
 		head = "\033[0;32m"dt" \033[0;36m"$2"#"$3"\033[0m";
 	print head""sep""msg;
-
 }'; return 0
 }
 
