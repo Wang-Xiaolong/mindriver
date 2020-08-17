@@ -322,10 +322,12 @@ Arguments:
 	EOF
 }
 
-mr_log_file() { # $1=file $2=verbose $3=mono
-	awk -v v="$2" -v n="$3" '
+mr_log_file() { # $1=file $2=verbose $3=mono $4=from $5=to
+	awk -v v="$2" -v n="$3" -v fr="$4" -v to="$5" '
 BEGIN { FS="<nF>" }
 {
+	if (length(fr) != 0) { if ($1 < fr) next }
+	if (length(to) != 0) { if ($1 > to) next }
 	msg = $2
 	if(v == "true") {
 		dt = strftime("[%Y-%m-%d (ww%U.%w) %H:%M:%S]", $1)
