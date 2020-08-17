@@ -500,6 +500,41 @@ OPTIONs:
 	EOF
 }
 
+mr_list() {
+	PARAMS=$(getopt -o nvd: -l mono,verbose,date -n 'mr_list' -- "$@")
+	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
+	eval set -- "$PARAMS"
+	debug "mr_log($@)"
+	local n=false v=false fr='' to='' d="."
+	while : ; do
+		case "$1" in
+		-n|--mono) n=true; shift;;
+		-v|--verbose) v=true; shift;;
+		-d|--date)
+			if [[ "$2" == *..* ]]; then
+				fr=$(sed -e 's/\.\..*//' <<< $2)
+				to=$(sed -e 's/.*\.\.//' <<< $2)
+				debug "from=$fr; to=$to"
+				fr=$(date -d "$fr" "+%s")
+				[ $? -ne 0 ] && echo "Bad from date." && return
+				to=$(date -d "$to" "+%s")
+				[ $? -ne 0 ] && echo "Bad to date." && return
+			else
+				fr=$(date -d "$2" "+%D") # ->date
+				[ $? -ne 0 ] && echo "Bad date." && return
+				fr=$(date -d "$fr" "+%s")
+				let to=$fr+86400
+			fi; debug "from=$fr; to=$to"
+			shift 2;;
+		--) shift; break;;
+		*) echo "Unknown option: $1"; return;;
+		esac
+	done
+	[ $# -gt 1 ] && echo "Support only 1 file or dir." && return
+	[ $# -eq 1 ] && d=$1
+	[ ! -d "$d" ] && echo "$d is not a directory." && return
+	find "$d" -name "*.log"
+}
 #=== SHELL =====================================================================
 usage_shell() {  #heredoc
 	cat<<-EOF
@@ -519,7 +554,7 @@ process_command() {
 	e|ed|edit) shift; [ $help_me == true ] && usage_edit || mr_edit "$@";;
 	m|mv|move) shift; [ $help_me == true ] && usage_move || mr_move "$@";;
 	l|log) shift; [ $help_me == true ] && usage_log || mr_log "$@";;
-	ls) shift; [ $help_me == true ] && usage_list || mr_list "$@";;
+	ls|list) shift; [ $help_me == true ] && usage_list || mr_list "$@";;
 	sh|shell) [ $in_shell == false ] && mr_shell "$@"\
 		|| echo "We are already in the mind river shell.";;
 	exit) [ $in_shell == true ] && in_shell=false \
