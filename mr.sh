@@ -324,9 +324,7 @@ Arguments:
 
 mr_log_file() { # $1=file $2=verbose $3=mono
 	awk -v verbose="$2" -v mono="$3" '
-BEGIN {
-	FS="<nF>"
-}
+BEGIN { FS="<nF>" }
 {
 	msg = $2
 	if(verbose == "true") {
@@ -344,35 +342,87 @@ BEGIN {
 	else
 		head = "\033[0;32m"dt" \033[0;36m"NR"\033[0m";
 	print head""sep""msg;
-}
-	' "$1"; return 0
+}' "$1"; return 0
 }
 
-mr_log_dir() { # $1=file $2=verbose $3=mono
+mrLOGS=''
+mr_log_collect() { # $1=files #2=home $3=from $4=to $5=kw
+	debug "mr_log_collect("$@")"
+	while IFS= read -r mr_file; do
+		fn=${mr_file#$2/}; debug "fn=$fn"
+		mrLOGS+=$(awk -v fn="$fn" -v fr="$3" -v to="$4" '
+BEGIN { FS="<nF>" }
+{
+	if (length(fr) != 0) { if ($1 < fr) next }
+	if (length(to) != 0) { if ($1 > to) next }
+	print $1"<nF>"fn"<nF>"NR"<nF>"$2
+}' "$mr_file")
+	done <<< "$1"
+}
+
+mr_log_dir() { # $1=file $2=verbose $3=mono $4=from $5=to
 	debug "mr_log_dir($@)"
-	return 0
+	local mr_files=$(find $1 -name "*.log")
+	mr_log_collect "$mr_files" "$1" "$4" "$5" ''
+	echo "$mrLOGS" | sort -n -t '<' -k1 | awk -v v="$2" -v n="$3" '
+BEGIN { FS="<nF>" }
+{
+	msg = $4
+	if(v == "true") {
+		dt = strftime("[%Y-%m-%d (ww%U.%w) %H:%M:%S]", $1)
+		gsub(/<nL>/,"\n",msg);
+		sep = "\n";
+	} else {
+		dt = strftime("%m/%d %H:%M", $1);
+		gsub(/<nL>.*/,"...",msg);
+		gsub(/<mt.*>/,"",msg);
+		sep = " "
+	}
+	if(n == "true")
+		head = dt" "$2"#"$3;
+	else
+		head = "\033[0;32m"dt" \033[0;36m"$2"#"$3"\033[0m";
+	print head""sep""msg;
+
+}'; return 0
 }
 
 mr_log() {
-	PARAMS=`getopt -o nv -l mono,verbose -n 'mr_list' -- "$@"`
+	PARAMS=`getopt -o nvd: -l mono,verbose,date -n 'mr_log' -- "$@"`
 	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
 	eval set -- "$PARAMS"
 	debug "mr_log($@)"
-	local mono=false; local verbose=false; local mr_file=$MR_FILE
+	local n=false v=false fr='' to='' f="$MR_FILE"
 	while : ; do
 		case "$1" in
-		-n|--mono) mono=true; shift;;
-		-v|--verbose) verbose=true; shift;;
+		-n|--mono) n=true; shift;;
+		-v|--verbose) v=true; shift;;
+		-d|--date)
+			if [[ "$2" == *..* ]]; then
+				fr=$(sed -e 's/\.\..*//' <<< $2)
+				to=$(sed -e 's/.*\.\.//' <<< $2)
+				debug "from=$fr; to=$to"
+				fr=$(date -d "$fr" "+%s")
+				[ $? -ne 0 ] && echo "Bad from date." && return
+				to=$(date -d "$to" "+%s")
+				[ $? -ne 0 ] && echo "Bad to date." && return
+			else
+				fr=$(date -d "$2" "+%D") # ->date
+				[ $? -ne 0 ] && echo "Bad date." && return
+				fr=$(date -d "$fr" "+%s")
+				let to=$fr+86400
+			fi; debug "from=$fr; to=$to"
+			shift 2;;
 		--) shift; break;;
 		*) echo "Unknown option: $1"; return;;
 		esac
 	done
 	[ $# -gt 1 ] && echo "Support only 1 file or dir." && return
-	[ $# -eq 1 ] && mr_file=$1
-	[ -z "$mr_file" ] && mr_file='.'; debug "$mr_file=$mr_file"
-	[ -f "$mr_file" ] && mr_log_file "$mr_file" $verbose $mono && return
-	[ -d "$mr_file" ] && mr_log_dir "$mr_file" $verbose $mono && return
-	echo "$mr_file doesn't exist."
+	[ $# -eq 1 ] && f=$1
+	[ -z "$f" ] && f='.'; debug "file=$f"
+	[ -f "$f" ] && mr_log_file "$f" $v $n "$fr" "$to" && return
+	[ -d "$f" ] && mr_log_dir "$f" $v $n "$fr" "$to" && return
+	echo "$f doesn't exist."
 }
 #=== MOVE ======================================================================
 usage_move() {
