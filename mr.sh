@@ -501,11 +501,12 @@ OPTIONs:
 }
 
 mr_list() {
-	PARAMS=$(getopt -o nvd: -l mono,verbose,date -n 'mr_list' -- "$@")
+	PARAMS=$(getopt -o nvd:s: -l mono,verbose,date:,sort: \
+		-n 'mr_list' -- "$@")
 	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
 	eval set -- "$PARAMS"
 	debug "mr_log($@)"
-	local n=false v=false fr='' to='' d="."
+	local n=false v=false fr='' to='' d="." s="-k1"
 	while : ; do
 		case "$1" in
 		-n|--mono) n=true; shift;;
@@ -526,6 +527,15 @@ mr_list() {
 				let to=$fr+86400
 			fi; debug "from=$fr; to=$to"
 			shift 2;;
+		-s|--sort)
+			if [ "$2" == "l" ]; then
+				s="-n -k3.4"
+			elif [ "$2" == "m" ]; then
+				s="-n -k2.4"
+			else
+				echo "Unsupported sort $s."
+			fi
+			shift 2;;
 		--) shift; break;;
 		*) echo "Unknown option: $1"; return;;
 		esac
@@ -533,7 +543,36 @@ mr_list() {
 	[ $# -gt 1 ] && echo "Support only 1 file or dir." && return
 	[ $# -eq 1 ] && d=$1
 	[ ! -d "$d" ] && echo "$d is not a directory." && return
-	find "$d" -name "*.log"
+	local files=$(find "$d" -name "*.log") lines=''
+	[[ $d != */ ]] && d="$d/"
+	while IFS= read -r f; do
+		local fn=${f#$d}; debug "fn=$fn"
+		local mt=$(date -r "$f" "+%s")
+		local latest=$(tail -1 $f)
+		lines+="$fn<nF>$mt<nF>$latest"$'\n'
+	done <<< "$files"; debug "lines=$lines"
+	echo "$lines" | sort -t '<' $s | awk -v v=$v -v n=$n '
+BEGIN { FS="<nF>" }
+/./ {
+	if (length(fr) != 0) { if ($3 < fr) next }
+	if (length(to) != 0) { if ($3 > to) next }
+	msg = $4
+	if(v == "true") {
+		dt = strftime("[%Y-%m-%d (ww%U.%w) %H:%M:%S]", $3)
+		gsub(/<nL>/,"\n",msg)
+		sep = "\n"
+	} else {
+		dt = strftime("%m/%d %H:%M", $3)
+		gsub(/<nL>.*/,"...",msg)
+		gsub(/<mt.*>/,"",msg)
+		sep = " "
+	}
+	if(n == "true")
+		head = dt" "$1
+	else
+		head = "\033[0;32m"dt" \033[0;36m"$1"\033[0m"
+	print head""sep""msg
+}'
 }
 #=== SHELL =====================================================================
 usage_shell() {  #heredoc
