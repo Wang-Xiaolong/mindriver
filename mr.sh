@@ -315,10 +315,18 @@ mr_edit() {
 #=== LOG =======================================================================
 usage_log() {
 	cat<<-EOF
-Usage: mr log [OPTION]... [FILE or DIR]
-Arguments:
-  -n, --mono
-  -v, --verbose
+Usage: mr log [OPTION]... [FILE or DIRECTORY]
+List the logs in a specified FILE or DIRECTORY.
+Example:
+	mr log example.log
+	mr log path/to/directory
+
+OPTIONs:
+  -d, --date=DATE	set the range of DATE of the logs to be listed.
+			DATE is a string accepted by command 'date -d',
+			can can also be a range like DATE1..DATE2.
+  -n, --mono		stop display color in the result.
+  -v, --verbose		display verbose result.
 	EOF
 }
 
