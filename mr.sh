@@ -68,7 +68,6 @@ if [[ $_ != $0 ]]; then # script is being sourced
 	fi
 	return
 fi
-
 #=== PUBLIC FUNCTIONS ==========================================================
 usage() {
 	cat<<-EOF
@@ -168,42 +167,6 @@ delete_log() { # $1=file $2=ln
 	sed -i -e "$2d" $1
 	debug "deleted"
 }
-
-
-#=== VIEW ======================================================================
-usage_view() {
-	cat<<-EOF
-Usage: mr view [OPTION]... [LN]...
-Arguments:
-  -f, --file=FILE
-  -l, --linenum
-	EOF
-}
-
-mr_view() {
-	PARAMS=`getopt -o f:l -l file:,linenum -n 'mr_view' -- "$@"`
-	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
-	eval set -- "$PARAMS"
-	debug "mr_view($@)"
-	local mr_file=$MR_FILE; local pr_ln=false;
-	while : ; do
-		case "$1" in
-		-f|--file) file=$2; shift 2;;
-		-l|--linenum) pr_ln=true; shift;;
-		--) shift; break;;
-		*) echo "Unknown option: $1"; return;;
-		esac
-	done
-	ln=$1
-
-	get_log "$mr_file" $ln
-	[ $? -ne 0 ] && return
-	local ts=$(get_ts)
-	local msg=$(get_msg)
-	date -d "@$ts" "+[%Y-%m-%d (ww%U.%w) %H:%M:%S]"
-	echo "$msg"
-}
-
 #=== ADD =======================================================================
 usage_add() {
 	cat<<-EOF
@@ -264,6 +227,39 @@ mr_add() {
 		update_log "$mr_file" $append
 	fi
 }
+#=== VIEW ======================================================================
+usage_view() {
+	cat<<-EOF
+Usage: mr view [OPTION]... [LN]...
+Arguments:
+  -f, --file=FILE
+  -l, --linenum
+	EOF
+}
+
+mr_view() {
+	PARAMS=`getopt -o f:l -l file:,linenum -n 'mr_view' -- "$@"`
+	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
+	eval set -- "$PARAMS"
+	debug "mr_view($@)"
+	local mr_file=$MR_FILE; local pr_ln=false;
+	while : ; do
+		case "$1" in
+		-f|--file) file=$2; shift 2;;
+		-l|--linenum) pr_ln=true; shift;;
+		--) shift; break;;
+		*) echo "Unknown option: $1"; return;;
+		esac
+	done
+	ln=$1
+
+	get_log "$mr_file" $ln
+	[ $? -ne 0 ] && return
+	local ts=$(get_ts)
+	local msg=$(get_msg)
+	date -d "@$ts" "+[%Y-%m-%d (ww%U.%w) %H:%M:%S]"
+	echo "$msg"
+}
 #=== EDIT ======================================================================
 usage_edit() {
 	cat<<-EOF
@@ -311,6 +307,60 @@ mr_edit() {
 	fi
 	mrLOG=$(set_msg); debug "mrLOG=$mrLOG"
 	update_log "$mr_file" $ln
+}
+#=== MOVE ======================================================================
+usage_move() {
+	cat<<-EOF
+Usage: mr move [OPTION]... LN... DEST
+Move log(s) specified by LN(s) to the log file specified by DEST.
+
+Arguments:
+  -f, --file=FILE
+	EOF
+}
+
+mr_move() {
+	debug "mr_move($@)"
+	PARAMS=$(getopt -o f: -l file: -n 'mr_move' -- "$@")
+	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
+	eval set -- "$PARAMS"
+	local mr_file=$MR_FILE
+	while : ; do
+		case "$1" in
+		-f|--file) mr_file=$2; shift 2;;
+		--) shift; break;;
+		*) echo "Unknown option: $1"; return;;
+		esac
+	done
+	[ -z "$mr_file" ] && echo "No file specified." && return
+	local args=( $@ ); debug "args=${args[@]}"
+	local len=${#args[@]}; debug "len=$len"
+	[ "$len" -lt 2 ] && echo "Not enough arguments." && return
+	local dest=${args[$len-1]}; debug "dest=$dest"
+	[ ! -f "$dest" ] && echo "$dest doesn't exist, will be created."
+	echo "These logs will be moved to $dest:"
+	local lns=( ${args[@]:0:$len-1} ); debug "lns=${lns[@]}"
+	local p_sed=''; local d_sed=''; local sep=''
+	for ln in "${lns[@]}"; do
+		debug "ln=$ln"
+		local nr_awk=$(echo $ln | sed 's/\([0-9]\+\)/NR==\1/g')
+		local dump_awk='BEGIN { FS="<nF>" }'" $nr_awk"'{
+	dt = strftime("%m/%d %H:%M", $1);
+	msg = $2
+	gsub(/<nL>.*/,"...",msg);
+	gsub(/<mt.*>/,"",msg);
+	print "\033[0;32m"dt" \033[0;36m"NR"\033[0m\t"msg;}'
+		debug "dump_awk=$dump_awk"
+		awk "$dump_awk" "$mr_file"
+		p_sed+="$sep${ln}p"
+		d_sed+="$sep${ln}d"
+		sep="; "
+	done; debug "p_sed=$p_sed"
+	read -p "OK(y/n)? " -n 1 -r
+	[[ ! $REPLY =~ ^[Yy]$ ]] && return
+	sed -n "$p_sed" "$mr_file" >> "$dest"
+	sort -o "$dest" -n -t '<' -k1 "$dest"
+	sed -i "$d_sed" "$mr_file"
 }
 #=== LOG =======================================================================
 usage_log() {
@@ -433,60 +483,6 @@ mr_log() {
 	[ -d "$f" ] && mr_log_dir "$f" $v $n "$fr" "$to" && return
 	echo "$f doesn't exist."
 }
-#=== MOVE ======================================================================
-usage_move() {
-	cat<<-EOF
-Usage: mr move [OPTION]... LN... DEST
-Move log(s) specified by LN(s) to the log file specified by DEST.
-
-Arguments:
-  -f, --file=FILE
-	EOF
-}
-
-mr_move() {
-	debug "mr_move($@)"
-	PARAMS=$(getopt -o f: -l file: -n 'mr_move' -- "$@")
-	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
-	eval set -- "$PARAMS"
-	local mr_file=$MR_FILE
-	while : ; do
-		case "$1" in
-		-f|--file) mr_file=$2; shift 2;;
-		--) shift; break;;
-		*) echo "Unknown option: $1"; return;;
-		esac
-	done
-	[ -z "$mr_file" ] && echo "No file specified." && return
-	local args=( $@ ); debug "args=${args[@]}"
-	local len=${#args[@]}; debug "len=$len"
-	[ "$len" -lt 2 ] && echo "Not enough arguments." && return
-	local dest=${args[$len-1]}; debug "dest=$dest"
-	[ ! -f "$dest" ] && echo "$dest doesn't exist, will be created."
-	echo "These logs will be moved to $dest:"
-	local lns=( ${args[@]:0:$len-1} ); debug "lns=${lns[@]}"
-	local p_sed=''; local d_sed=''; local sep=''
-	for ln in "${lns[@]}"; do
-		debug "ln=$ln"
-		local nr_awk=$(echo $ln | sed 's/\([0-9]\+\)/NR==\1/g')
-		local dump_awk='BEGIN { FS="<nF>" }'" $nr_awk"'{
-	dt = strftime("%m/%d %H:%M", $1);
-	msg = $2
-	gsub(/<nL>.*/,"...",msg);
-	gsub(/<mt.*>/,"",msg);
-	print "\033[0;32m"dt" \033[0;36m"NR"\033[0m\t"msg;}'
-		debug "dump_awk=$dump_awk"
-		awk "$dump_awk" "$mr_file"
-		p_sed+="$sep${ln}p"
-		d_sed+="$sep${ln}d"
-		sep="; "
-	done; debug "p_sed=$p_sed"
-	read -p "OK(y/n)? " -n 1 -r
-	[[ ! $REPLY =~ ^[Yy]$ ]] && return
-	sed -n "$p_sed" "$mr_file" >> "$dest"
-	sort -o "$dest" -n -t '<' -k1 "$dest"
-	sed -i "$d_sed" "$mr_file"
-}
 #=== SHELL =====================================================================
 usage_shell() {  #heredoc
 	cat<<-EOF
@@ -504,9 +500,9 @@ process_command() {
 	a|add) shift; [ $help_me == true ] && usage_add || mr_add "$@";;
 	v|view) shift; [ $help_me == true ] && usage_view || mr_view "$@";;
 	e|ed|edit) shift; [ $help_me == true ] && usage_edit || mr_edit "$@";;
+	m|mv|move) shift; [ $help_me == true ] && usage_move || mr_move "$@";;
 	l|log) shift; [ $help_me == true ] && usage_log || mr_log "$@";;
 	ls) shift; [ $help_me == true ] && usage_list || mr_list "$@";;
-	m|mv|move) shift; [ $help_me == true ] && usage_move || mr_move "$@";;
 	sh|shell) [ $in_shell == false ] && mr_shell "$@"\
 		|| echo "We are already in the mind river shell.";;
 	exit) [ $in_shell == true ] && in_shell=false \
