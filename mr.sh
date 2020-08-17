@@ -447,7 +447,7 @@ BEGIN { FS="<nF>" }
 }
 
 mr_log() {
-	PARAMS=`getopt -o nvd: -l mono,verbose,date -n 'mr_log' -- "$@"`
+	PARAMS=$(getopt -o nvd: -l mono,verbose,date -n 'mr_log' -- "$@")
 	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
 	eval set -- "$PARAMS"
 	debug "mr_log($@)"
@@ -483,6 +483,23 @@ mr_log() {
 	[ -d "$f" ] && mr_log_dir "$f" $v $n "$fr" "$to" && return
 	echo "$f doesn't exist."
 }
+#=== LIST ======================================================================
+usage_list() {
+	cat<<-EOF
+Usage: mr list [OPTION]... [DIRECTORY]
+List the log files in a DIRECTORY.
+Example:
+	mr list path/to/directory
+
+OPTIONs:
+  -d, --date=DATE	set the range of DATE of the logs to be listed.
+			DATE is a string accepted by command 'date -d',
+			can can also be a range like DATE1..DATE2.
+  -n, --mono		stop display color in the result.
+  -v, --verbose		display verbose result.
+	EOF
+}
+
 #=== SHELL =====================================================================
 usage_shell() {  #heredoc
 	cat<<-EOF
