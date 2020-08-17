@@ -180,7 +180,7 @@ Arguments:
 NUMRE='^[0-9]+$'
 
 mr_add() {
-	PARAMS=`getopt -o a:f: -l append:,file: -n 'mr_add' -- "$@"`
+	PARAMS=$(getopt -o a:f: -l append:,file: -n 'mr_add' -- "$@")
 	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
 	eval set -- "$PARAMS"
 	debug "mr_add($@)"
@@ -238,7 +238,7 @@ Arguments:
 }
 
 mr_view() {
-	PARAMS=`getopt -o f:l -l file:,linenum -n 'mr_view' -- "$@"`
+	PARAMS=$(getopt -o f:l -l file:,linenum -n 'mr_view' -- "$@")
 	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
 	eval set -- "$PARAMS"
 	debug "mr_view($@)"
