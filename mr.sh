@@ -541,9 +541,11 @@ mr_list() {
 	local files=$(find "$d" -name "*.log") lines=''
 	[[ $d != */ ]] && d="$d/"
 	while IFS= read -r f; do
+		[ -z "$f" ] && continue
 		local fn=${f#$d}; debug "fn=$fn"
 		local mt=$(date -r "$f" "+%s")
 		local latest=$(tail -1 $f)
+		[ -z "$latest" ] && lastest="$mt<nF>--FILE EMPTY--"
 		lines+="$fn<nF>$mt<nF>$latest"$'\n'
 	done <<< "$files"; debug "lines=$lines"
 	echo "$lines" | sort -t '<' $s | awk -v v=$v -v n=$n '
