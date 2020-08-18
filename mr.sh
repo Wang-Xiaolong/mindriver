@@ -45,10 +45,11 @@ if [[ $_ != $0 ]]; then # script is being sourced
 			alias ${mr_cmd}f=". $mr_sh init -f"
 			alias ${mr_cmd}clean=". $mr_sh clean"
 			alias ${mr_cmd}a="$mr_sh a"
-			alias ${mr_cmd}l="$mr_sh l"
-			alias ${mr_cmd}lv="$mr_sh l -v"
 			alias ${mr_cmd}e="$mr_sh e"
 			alias ${mr_cmd}m="$mr_sh m"
+			alias ${mr_cmd}l="$mr_sh l"
+			alias ${mr_cmd}lv="$mr_sh l -v"
+			alias ${mr_cmd}ls="$mr_sh ls"
 			export MR_CMD=$mr_cmd
 			echo "Command alias $mr_cmd was setup."
 			unset mr_sh mr_cmd
@@ -504,8 +505,7 @@ mr_list() {
 	PARAMS=$(getopt -o nvd:s: -l mono,verbose,date:,sort: \
 		-n 'mr_list' -- "$@")
 	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
-	eval set -- "$PARAMS"
-	debug "mr_log($@)"
+	eval set -- "$PARAMS"; debug "mr_list($@)"
 	local n=false v=false fr='' to='' d="." s="-k1"
 	while : ; do
 		case "$1" in
