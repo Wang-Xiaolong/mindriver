@@ -28,7 +28,7 @@ if [[ $_ != $0 ]]; then # script is being sourced
 		mr_params=$(getopt -o c:f: -l command:,file:,shell \
 			-n 'mr_init' -- "$@")
 		[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
-		eval set -- "$mr_params";
+		eval set -- "$mr_params"; debug "mr_init($@)"
 		while : ; do
 			case "$1" in
 			-c|--command) mr_cmd="$2"; shift 2;;
@@ -183,8 +183,7 @@ NUMRE='^[0-9]+$'
 mr_add() {
 	PARAMS=$(getopt -o a:f: -l append:,file: -n 'mr_add' -- "$@")
 	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
-	eval set -- "$PARAMS"
-	debug "mr_add($@)"
+	eval set -- "$PARAMS"; debug "mr_add($@)"
 	local append=""; local mr_file=$MR_FILE
 	while : ; do
 		case "$1" in
@@ -241,8 +240,7 @@ Arguments:
 mr_view() {
 	PARAMS=$(getopt -o f:l -l file:,linenum -n 'mr_view' -- "$@")
 	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
-	eval set -- "$PARAMS"
-	debug "mr_view($@)"
+	eval set -- "$PARAMS"; debug "mr_view($@)"
 	local mr_file=$MR_FILE; local pr_ln=false;
 	while : ; do
 		case "$1" in
@@ -271,10 +269,9 @@ Arguments:
 }
 
 mr_edit() {
-	debug "mr_edit($@)"
 	PARAMS=$(getopt -o af: -l append,file: -n 'mr_init' -- "$@")
 	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
-	eval set -- "$PARAMS"
+	eval set -- "$PARAMS"; debug "mr_edit($@)"
 	local mr_file=$MR_FILE
 	while : ; do
 		case "$1" in
@@ -321,10 +318,9 @@ Arguments:
 }
 
 mr_move() {
-	debug "mr_move($@)"
 	PARAMS=$(getopt -o f: -l file: -n 'mr_move' -- "$@")
 	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
-	eval set -- "$PARAMS"
+	eval set -- "$PARAMS"; debug "mr_move($@)"
 	local mr_file=$MR_FILE
 	while : ; do
 		case "$1" in
@@ -450,8 +446,7 @@ BEGIN { FS="<nF>" }
 mr_log() {
 	PARAMS=$(getopt -o nvd: -l mono,verbose,date -n 'mr_log' -- "$@")
 	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
-	eval set -- "$PARAMS"
-	debug "mr_log($@)"
+	eval set -- "$PARAMS"; debug "mr_log($@)"
 	local n=false v=false fr='' to='' f="$MR_FILE"
 	while : ; do
 		case "$1" in
