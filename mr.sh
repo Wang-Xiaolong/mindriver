@@ -57,14 +57,18 @@ if [[ $_ != $0 ]]; then # script is being sourced
 		[ -z "$MR_EXT" ] && echo "Warning: No -e EXT, no log/ls."
 		[ -z "$MR_TYPE" ] && echo "Warning: No -t TYPE by default."
 	elif [ "$1" == clean ]; then
-		shift; [ $mr_debug == true ] && echo "mr_clean()"
-		unalias ${MR_CMD} ${MR_CMD}init ${MR_CMD}clean ${MR_CMD}f
-		unalias ${MR_CMD}a ${MR_CMD}l ${MR_CMD}lv unalias ${MR_CMD}e
-		export -n MR_CMD MR_FILE
+		shift; [ "$mr_debug" == true ] && echo "mr_clean()"
+		mr_aliases=$(alias | grep "$MR_SH" \
+			| sed -e 's/=.*//' -e 's/alias //')
+		while IFS= read -r a ; do
+			[ -z "$a" ] && continue
+			unalias $a; echo "Unalias $a"
+		done <<< "$mr_aliases"; unset mr_aliases
+		export -n MR_SH MR_EXT MR_TYPE MR_FILE
 	else
 		echo "Unsupported sourced mode command $1."
 	fi
-	return
+	unset mr_debug; return
 fi
 #=== PUBLIC FUNCTIONS ==========================================================
 usage() {
