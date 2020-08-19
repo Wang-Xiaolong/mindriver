@@ -27,7 +27,6 @@ if [[ $_ != $0 ]]; then # script is being sourced
 			echo "Current file: $MR_FILE"
 			return
 		fi
-
 		mr_params=$(getopt -o c:e:t:f: \
 			-l command:,ext:,type:,file:,shell \
 			-n 'mr_init' -- "$@")
@@ -35,7 +34,10 @@ if [[ $_ != $0 ]]; then # script is being sourced
 		eval set -- "$mr_params"
 		while : ; do
 			case "$1" in
-			-c|--command) mr_cmd="$2"; shift 2;;
+			-c|--command) export MR_SH="$(realpath $BASH_SOURCE)"
+				alias $2="$MR_SH"
+				echo "Command alias $2 was setup."
+				shift 2;;
 			-e|--ext) export MR_EXT="$2"
 				echo "Log file name extension: $MR_EXT"
 				shift 2;;
@@ -49,23 +51,8 @@ if [[ $_ != $0 ]]; then # script is being sourced
 			--) shift; break;;
 			*) echo "Unknown option: $1"; return;;
 			esac
-		done
-		if [ -n "$mr_cmd" ]; then
-			mr_sh=$(realpath $BASH_SOURCE)
-			alias $mr_cmd="$mr_sh"
-			alias ${mr_cmd}init=". $mr_sh init"
-			alias ${mr_cmd}f=". $mr_sh init -f"
-			alias ${mr_cmd}clean=". $mr_sh clean"
-			alias ${mr_cmd}a="$mr_sh a"
-			alias ${mr_cmd}e="$mr_sh e"
-			alias ${mr_cmd}m="$mr_sh m"
-			alias ${mr_cmd}l="$mr_sh l"
-			alias ${mr_cmd}lv="$mr_sh l -v"
-			alias ${mr_cmd}ls="$mr_sh ls"
-			export MR_CMD=$mr_cmd
-			echo "Command alias $mr_cmd was setup."
-			unset mr_sh mr_cmd
-		fi
+		done; unset mr_params
+		[ -z "$MR_SH" ] && echo "Error: No -c CMD, no command to use."
 		[ -z "$MR_FILE" ] && echo "Warning: No -f FILE by default."
 		[ -z "$MR_EXT" ] && echo "Warning: No -e EXT, no log/ls."
 		[ -z "$MR_TYPE" ] && echo "Warning: No -t TYPE by default."
