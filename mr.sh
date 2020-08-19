@@ -549,7 +549,7 @@ mr_list() {
 	while IFS= read -r f; do
 		[ -z "$f" ] && continue
 		[ ! -f "$f" ] && continue
-		local fn=${f#$d}; debug "fn=$fn"
+		local fn=${f#$d}; fn=${fn%.$MR_EXT}; debug "fn=$fn"
 		local mt=$(date -r "$f" "+%s")
 		local latest=$(tail -1 $f)
 		[ -z "$latest" ] && lastest="$mt<nF>--FILE EMPTY--"
