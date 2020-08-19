@@ -23,11 +23,13 @@ if [[ $_ != $0 ]]; then # script is being sourced
 			echo "Command alias:"
 			alias | grep $(basename $BASH_SOURCE)
 			echo "Log file name extension: $MR_EXT"
+			echo "Default file type: $MR_TYPE"
 			echo "Current file: $MR_FILE"
 			return
 		fi
 
-		mr_params=$(getopt -o c:e:f: -l command:,ext:,file:,shell \
+		mr_params=$(getopt -o c:e:t:f: \
+			-l command:,ext:,type:,file:,shell \
 			-n 'mr_init' -- "$@")
 		[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
 		eval set -- "$mr_params"
@@ -35,6 +37,7 @@ if [[ $_ != $0 ]]; then # script is being sourced
 			case "$1" in
 			-c|--command) mr_cmd="$2"; shift 2;;
 			-e|--ext) export MR_EXT="$2"; shift 2;;
+			-t|--type) export MR_TYPE="$2"; shift 2;;
 			-f|--file) mr_file="$2"; shift 2;;
 			--shell) mr_shell=true; shift;;
 			--) shift; break;;
@@ -63,6 +66,7 @@ if [[ $_ != $0 ]]; then # script is being sourced
 			unset mr_file
 		fi
 		[ -z "$MR_EXT" ] && echo "Warning: No -e EXT, no log/ls."
+		[ -z "$MR_TYPE" ] && echo "Warning: No -t TYPE by default."
 	elif [ "$1" == clean ]; then
 		shift; [ $mr_debug == true ] && echo "mr_clean()"
 		unalias ${MR_CMD} ${MR_CMD}init ${MR_CMD}clean ${MR_CMD}f
@@ -127,7 +131,8 @@ get_ts() { sed -e 's/\(^[0-9]\+\).*/\1/' <<< $mrLOG; }
 get_msg() { sed -e 's/^[0-9]\+<nF>//' -e 's/<nL>/\n/g' <<< $mrLOG; }
 mrMSG=''
 edit_msg() { # $1=old_msg
-	local tempf=$(mktemp -u -t mr.XXXXXXXX.mt)
+	local type=''; [ -n "$MR_TYPE" ] && type=".$MR_TYPE"
+	local tempf=$(mktemp -u -t mr.XXXXXXXX$type)
 	[ -n "$1" ] && echo "$1" > $tempf
 	vim $tempf
 	[ -f $tempf ] && mrMSG=$(cat $tempf) || return 1
