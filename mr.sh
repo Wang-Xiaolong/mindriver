@@ -23,6 +23,7 @@ if [[ $_ != $0 ]]; then # script is being sourced
 			echo "Command alias:"
 			alias | grep $(basename $BASH_SOURCE)
 			echo "Current file: $MR_FILE"
+			return
 		fi
 
 		mr_params=$(getopt -o c:e:f: -l command:,ext:,file:,shell \
