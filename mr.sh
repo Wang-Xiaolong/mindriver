@@ -18,7 +18,7 @@ if [[ $_ != $0 ]]; then # script is being sourced
 	[ "$mr_debug" == true ] && echo "Sourced mr: $@"
 
 	if [ "$1" == init ]; then
-		shift; [ "$mr_debug" == true ] && echo "mr_init()"
+		shift; [ "$mr_debug" == true ] && echo "mr_init($@)"
 		if [ $# -eq 0 ]; then
 			echo "Command alias:"
 			alias | grep $(basename $BASH_SOURCE)
@@ -28,7 +28,7 @@ if [[ $_ != $0 ]]; then # script is being sourced
 		mr_params=$(getopt -o c:e:f: -l command:,ext:,file:,shell \
 			-n 'mr_init' -- "$@")
 		[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
-		eval set -- "$mr_params"; debug "mr_init($@)"
+		eval set -- "$mr_params"
 		while : ; do
 			case "$1" in
 			-c|--command) mr_cmd="$2"; shift 2;;
