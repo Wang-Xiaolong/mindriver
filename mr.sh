@@ -25,13 +25,14 @@ if [[ $_ != $0 ]]; then # script is being sourced
 			echo "Current file: $MR_FILE"
 		fi
 
-		mr_params=$(getopt -o c:f: -l command:,file:,shell \
+		mr_params=$(getopt -o c:e:f: -l command:,ext:,file:,shell \
 			-n 'mr_init' -- "$@")
 		[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
 		eval set -- "$mr_params"; debug "mr_init($@)"
 		while : ; do
 			case "$1" in
 			-c|--command) mr_cmd="$2"; shift 2;;
+			-e|--ext) export MR_EXT="$2"; shift 2;;
 			-f|--file) mr_file="$2"; shift 2;;
 			--shell) mr_shell=true; shift;;
 			--) shift; break;;
@@ -59,6 +60,7 @@ if [[ $_ != $0 ]]; then # script is being sourced
 			echo "Set $MR_FILE."
 			unset mr_file
 		fi
+		[ -z "$MR_EXT" ] && echo "Warning: No -e EXT, no log/ls."
 	elif [ "$1" == clean ]; then
 		shift; [ $mr_debug == true ] && echo "mr_clean()"
 		unalias ${MR_CMD} ${MR_CMD}init ${MR_CMD}clean ${MR_CMD}f
@@ -406,6 +408,7 @@ mrLOGS=''
 mr_log_collect() { # $1=files #2=home $3=from $4=to $5=kw
 	debug "mr_log_collect("$@")"
 	while IFS= read -r mr_file; do
+		[ ! -f "$mr_file" ] && continue
 		fn=${mr_file#$2/}; debug "fn=$fn"
 		mrLOGS+=$(awk -v fn="$fn" -v fr="$3" -v to="$4" '
 BEGIN { FS="<nF>" }
@@ -419,7 +422,8 @@ BEGIN { FS="<nF>" }
 
 mr_log_dir() { # $1=file $2=verbose $3=mono $4=from $5=to
 	debug "mr_log_dir($@)"
-	local mr_files=$(find $1 -name "*.log")
+	[ -z "$MR_EXT" ] && echo "No EXT set, exit." && return 0
+	local mr_files=$(find $1 -name "*.$MR_$MR_EXT")
 	mr_log_collect "$mr_files" "$1" "$4" "$5" ''
 	echo "$mrLOGS" | sort -n -t '<' -k1 | awk -v v="$2" -v n="$3" '
 BEGIN { FS="<nF>" }
@@ -538,10 +542,12 @@ mr_list() {
 	[ $# -gt 1 ] && echo "Support only 1 file or dir." && return
 	[ $# -eq 1 ] && d=$1
 	[ ! -d "$d" ] && echo "$d is not a directory." && return
-	local files=$(find "$d" -name "*.log") lines=''
+	[ -z "$MR_EXT" ] && echo "No EXT set, exit." && return
+	local files=$(find "$d" -name "*.$MR_EXT") lines=''
 	[[ $d != */ ]] && d="$d/"
 	while IFS= read -r f; do
 		[ -z "$f" ] && continue
+		[ ! -f "$f" ] && continue
 		local fn=${f#$d}; debug "fn=$fn"
 		local mt=$(date -r "$f" "+%s")
 		local latest=$(tail -1 $f)
