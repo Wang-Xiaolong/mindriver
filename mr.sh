@@ -36,9 +36,15 @@ if [[ $_ != $0 ]]; then # script is being sourced
 		while : ; do
 			case "$1" in
 			-c|--command) mr_cmd="$2"; shift 2;;
-			-e|--ext) export MR_EXT="$2"; shift 2;;
-			-t|--type) export MR_TYPE="$2"; shift 2;;
-			-f|--file) mr_file="$2"; shift 2;;
+			-e|--ext) export MR_EXT="$2"
+				echo "Log file name extension: $MR_EXT"
+				shift 2;;
+			-t|--type) export MR_TYPE="$2"
+				echo "Default file type: $MR_TYPE"
+				shift 2;;
+			-f|--file) export MR_FILE="$(realpath $2)"
+				echo "Current file: $MR_FILE"
+				shift 2;;
 			--shell) mr_shell=true; shift;;
 			--) shift; break;;
 			*) echo "Unknown option: $1"; return;;
@@ -60,11 +66,7 @@ if [[ $_ != $0 ]]; then # script is being sourced
 			echo "Command alias $mr_cmd was setup."
 			unset mr_sh mr_cmd
 		fi
-		if [ -n "$mr_file" ]; then
-			export MR_FILE=$(realpath $mr_file)
-			echo "Set $MR_FILE."
-			unset mr_file
-		fi
+		[ -z "$MR_FILE" ] && echo "Warning: No -f FILE by default."
 		[ -z "$MR_EXT" ] && echo "Warning: No -e EXT, no log/ls."
 		[ -z "$MR_TYPE" ] && echo "Warning: No -t TYPE by default."
 	elif [ "$1" == clean ]; then
