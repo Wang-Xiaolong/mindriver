@@ -22,6 +22,7 @@ if [[ $_ != $0 ]]; then # script is being sourced
 		if [ $# -eq 0 ]; then
 			echo "Command alias:"
 			alias | grep $(basename $BASH_SOURCE)
+			echo "Log file name extension: $MR_EXT"
 			echo "Current file: $MR_FILE"
 			return
 		fi
