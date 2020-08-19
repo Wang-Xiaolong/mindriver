@@ -405,11 +405,12 @@ BEGIN { FS="<nF>" }
 }
 
 mrLOGS=''
-mr_log_collect() { # $1=files #2=home $3=from $4=to $5=kw
+mr_log_collect() { # $1=files #2=dir $3=from $4=to $5=kw
 	debug "mr_log_collect("$@")"
+	local dir=$2; [[ "$dir" != */ ]] && dir="$dir/"
 	while IFS= read -r mr_file; do
 		[ ! -f "$mr_file" ] && continue
-		fn=${mr_file#$2/}; debug "fn=$fn"
+		fn=${mr_file#$dir}; debug "fn=$fn"
 		mrLOGS+=$(awk -v fn="$fn" -v fr="$3" -v to="$4" '
 BEGIN { FS="<nF>" }
 {
