@@ -410,14 +410,15 @@ mr_log_collect() { # $1=files #2=dir $3=from $4=to $5=kw
 	local dir=$2 sep=''; [[ "$dir" != */ ]] && dir="$dir/"
 	while IFS= read -r mr_file; do
 		[ ! -f "$mr_file" ] && continue
-		fn=${mr_file#$dir}; fn=${fn%.$MR_EXT}; debug "fn=$fn"
-		mrLOGS+="$sep"$(awk -v fn="$fn" -v fr="$3" -v to="$4" '
+		local fn=${mr_file#$dir}; fn=${fn%.$MR_EXT}; debug "fn=$fn"
+		local rs=$(awk -v fn="$fn" -v fr="$3" -v to="$4" '
 BEGIN { FS="<nF>" }
 {
 	if (length(fr) != 0) { if ($1 < fr) next }
 	if (length(to) != 0) { if ($1 > to) next }
 	print $1"<nF>"fn"<nF>"NR"<nF>"$2
-}' "$mr_file"); sep=$'\n'
+}' "$mr_file")
+		[ -n "$rs" ] && mrLOGS+="$sep""$rs" && sep=$'\n'
 	done <<< "$1"
 }
 
