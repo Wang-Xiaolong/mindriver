@@ -33,7 +33,7 @@ if [[ $_ != $0 ]]; then # script is being sourced
 	eval set -- "$mr_params"
 	while : ; do
 		case "$1" in
-		-c|--command) export MR_SH="$(realpath $BASH_SOURCE)"
+		-c|--command) export MR_SH="$(realpath ${BASH_SOURCE[0]})"
 			alias $2="$MR_SH"
 			echo "Command alias $2 was setup."
 			shift 2;;
