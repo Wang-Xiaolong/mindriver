@@ -1,54 +1,20 @@
 #!/usr/bin/env bash
 #=== Sourced: INIT and CLEAN ===================================================
 if [[ $_ != $0 ]]; then # script is being sourced
-	[ $# -eq 0 ] && { $(realpath ${BASH_SOURCE[0]}); return; }
+	if [ $# -eq 0 ]; then
+		echo "Command alias:"
+		alias | grep $(basename ${BASH_SOURCE[0]})
+		echo "Log file name extension: $MR_EXT"
+		echo "Default file type: $MR_TYPE"
+		echo "Current file: $MR_FILE"
+		return
+	fi
 	for a in "$@"; do
 		if [ "$a" = -? ] || [ "$a" = -h ] || [ "$a" = --help ]; then
 			$(realpath ${BASH_SOURCE[0]}) "$@"; return
 		fi
 	done
-
-	if [ "$1" == init ]; then
-		shift
-		if [ $# -eq 0 ]; then
-			echo "Command alias:"
-			alias | grep $(basename $BASH_SOURCE)
-			echo "Log file name extension: $MR_EXT"
-			echo "Default file type: $MR_TYPE"
-			echo "Current file: $MR_FILE"
-			return
-		fi
-		mr_params=$(getopt -o c:e:t:f: \
-			-l command:,ext:,type:,file:,shell \
-			-n 'mr_init' -- "$@")
-		[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
-		eval set -- "$mr_params"
-		while : ; do
-			case "$1" in
-			-c|--command) export MR_SH="$(realpath $BASH_SOURCE)"
-				alias $2="$MR_SH"
-				echo "Command alias $2 was setup."
-				shift 2;;
-			-e|--ext) export MR_EXT="$2"
-				echo "Log file name extension: $MR_EXT"
-				shift 2;;
-			-t|--type) export MR_TYPE="$2"
-				echo "Default file type: $MR_TYPE"
-				shift 2;;
-			-f|--file) export MR_FILE="$(realpath $2)"
-				echo "Current file: $MR_FILE"
-				shift 2;;
-			--shell) mr_shell=true; shift;;
-			--) shift; break;;
-			*) echo "Unknown option: $1"; return;;
-			esac
-		done; unset mr_params
-		[ -z "$MR_SH" ] && echo "Error: No -c CMD, no command to use."
-		[ -z "$MR_FILE" ] && echo "Warning: No -f FILE by default."
-		[ -z "$MR_EXT" ] && echo "Warning: No -e EXT, no log/ls."
-		[ -z "$MR_TYPE" ] && echo "Warning: No -t TYPE by default."
-	elif [ "$1" == clean ]; then
-		shift
+	if [ "$1" == clean ]; then
 		mr_aliases=$(alias | grep "$MR_SH" \
 			| sed -e 's/=.*//' -e 's/alias //')
 		while IFS= read -r a ; do
@@ -56,9 +22,37 @@ if [[ $_ != $0 ]]; then # script is being sourced
 			unalias $a; echo "Unalias $a"
 		done <<< "$mr_aliases"; unset mr_aliases
 		export -n MR_SH MR_EXT MR_TYPE MR_FILE
-	else
-		echo "Unsupported sourced mode command $1."
+		return
 	fi
+	mr_params=$(getopt -o c:e:t:f: \
+		-l command:,ext:,type:,file:,shell \
+		-n 'mr_source' -- "$@")
+	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
+	eval set -- "$mr_params"
+	while : ; do
+		case "$1" in
+		-c|--command) export MR_SH="$(realpath $BASH_SOURCE)"
+			alias $2="$MR_SH"
+			echo "Command alias $2 was setup."
+			shift 2;;
+		-e|--ext) export MR_EXT="$2"
+			echo "Log file name extension: $MR_EXT"
+			shift 2;;
+		-t|--type) export MR_TYPE="$2"
+			echo "Default file type: $MR_TYPE"
+			shift 2;;
+		-f|--file) export MR_FILE="$(realpath $2)"
+			echo "Current file: $MR_FILE"
+			shift 2;;
+		--shell) mr_shell=true; shift;;
+		--) shift; break;;
+		*) echo "Unknown option: $1"; return;;
+		esac
+	done; unset mr_params
+	[ -z "$MR_SH" ] && echo "Error: No -c CMD, no command to use."
+	[ -z "$MR_FILE" ] && echo "Warning: No -f FILE by default."
+	[ -z "$MR_EXT" ] && echo "Warning: No -e EXT, no log/ls."
+	[ -z "$MR_TYPE" ] && echo "Warning: No -t TYPE by default."
 	return
 fi
 #=== PUBLIC FUNCTIONS ==========================================================
