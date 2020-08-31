@@ -15,12 +15,14 @@ if [[ $_ != $0 ]]; then # script is being sourced
 		fi
 	done
 	if [ "$1" == clean ]; then
-		mr_aliases=$(alias | grep "$MR_SH" \
-			| sed -e 's/=.*//' -e 's/alias //')
-		while IFS= read -r a ; do
-			[ -z "$a" ] && continue
-			unalias $a; echo "Unalias $a"
-		done <<< "$mr_aliases"; unset mr_aliases
+		if [ -n "$MR_SH" ]; then
+			mr_aliases=$(alias | grep "$MR_SH" \
+				| sed -e 's/=.*//' -e 's/alias //')
+			while IFS= read -r a ; do
+				[ -z "$a" ] && continue
+				unalias $a; echo "Unalias $a"
+			done <<< "$mr_aliases"; unset mr_aliases
+		fi
 		export -n MR_SH MR_EXT MR_TYPE MR_FILE
 		return
 	fi
