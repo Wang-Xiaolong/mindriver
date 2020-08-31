@@ -1,10 +1,7 @@
 #!/usr/bin/env bash
 #=== Sourced: INIT and CLEAN ===================================================
 if [[ $_ != $0 ]]; then # script is being sourced
-	if [ $# -eq 0 ]; then
-		./${BASH_SOURCE[0]#$PWD/}
-		return
-	fi
+	[ $# -eq 0 ] && { $(realpath ${BASH_SOURCE[0]}); return; }
 	orig_args=( "$@" )
 	for arg do
 		shift
