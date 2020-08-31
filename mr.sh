@@ -2,17 +2,11 @@
 #=== Sourced: INIT and CLEAN ===================================================
 if [[ $_ != $0 ]]; then # script is being sourced
 	[ $# -eq 0 ] && { $(realpath ${BASH_SOURCE[0]}); return; }
-	orig_args=( "$@" )
-	for arg do
-		shift
-		case $arg in
-		'-?'|-h|--help) ./${BASH_SOURCE[0]#$PWD/} "${orig_args[@]}"
-			unset orig_args; return;;
-		--debug) mr_debug=true;;
-		*) set -- "$@" "$arg";;
-		esac
-	done; unset orig_args
-	[ "$mr_debug" == true ] && echo "Sourced mr: $@"
+	for a in "$@"; do
+		if [ "$a" = -? ] || [ "$a" = -h ] || [ "$a" = --help ]; then
+			$(realpath ${BASH_SOURCE[0]}) "$@"; return
+		fi
+	done
 
 	if [ "$1" == init ]; then
 		shift; [ "$mr_debug" == true ] && echo "mr_init($@)"
