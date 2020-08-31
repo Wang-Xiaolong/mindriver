@@ -9,7 +9,7 @@ if [[ $_ != $0 ]]; then # script is being sourced
 	done
 
 	if [ "$1" == init ]; then
-		shift; [ "$mr_debug" == true ] && echo "mr_init($@)"
+		shift
 		if [ $# -eq 0 ]; then
 			echo "Command alias:"
 			alias | grep $(basename $BASH_SOURCE)
@@ -48,7 +48,7 @@ if [[ $_ != $0 ]]; then # script is being sourced
 		[ -z "$MR_EXT" ] && echo "Warning: No -e EXT, no log/ls."
 		[ -z "$MR_TYPE" ] && echo "Warning: No -t TYPE by default."
 	elif [ "$1" == clean ]; then
-		shift; [ "$mr_debug" == true ] && echo "mr_clean()"
+		shift
 		mr_aliases=$(alias | grep "$MR_SH" \
 			| sed -e 's/=.*//' -e 's/alias //')
 		while IFS= read -r a ; do
@@ -59,7 +59,7 @@ if [[ $_ != $0 ]]; then # script is being sourced
 	else
 		echo "Unsupported sourced mode command $1."
 	fi
-	unset mr_debug; return
+	return
 fi
 #=== PUBLIC FUNCTIONS ==========================================================
 usage() {
