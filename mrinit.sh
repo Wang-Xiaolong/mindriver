@@ -3,9 +3,8 @@
 mr_dir=$(dirname $(realpath ${BASH_SOURCE[0]}))
 [ ! -f "$mr_dir/mr.sh" ] && echo "mr.sh not found." && return
 [ -n "$1" ] && mr_file="$1" || mr_file="$mr_dir/log/wxl.mr"
-. "$mr_dir/mr.sh" init -c mr -e mr -t marktree -f "$mr_file"
-alias mrinit=". $MR_SH init"
-alias mrf=". $MR_SH init -f"
+. "$mr_dir/mr.sh" -c mr -e mr -t marktree -f "$mr_file"
+alias mrf=". $MR_SH -f"
 alias mrclean=". $MR_SH clean"
 alias mra="$MR_SH a"
 alias mre="$MR_SH e"
