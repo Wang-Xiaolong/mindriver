@@ -98,7 +98,53 @@ Basically a .mrc file with configurations specified in OPTIONs:
   -e, --email=EMAIL  Set the EMAIL address of the owner.
 	EOF
 }
-
+mrREPO=''
+get_repo() { # $1=path
+	local dir=$(realpath "$1")
+	while [ "$dir" != / ]; do
+		[ -f "$dir/.mrc" ] && mrREPO="$dir" && return
+		dir=$(dirname "$dir"); debug "dir=$dir"
+	done; mrREPO=''
+}
+set_conf() { # $1=fp $2=key $3=value
+	[ ! -f "$1" ] && echo "$2='$3'" >> "$1" && return
+	[ -z $(grep "$2=" "$1") ] && echo "$2='$3'" >> "$1" && return
+	sed -i "s/\($2=\).*/\1'$3'/" "$1"
+}
+mr_init() {
+	PARAMS=$(getopt -o n:o:e: -l name:,owner:,email: -n 'mr_init' -- "$@")
+	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
+	eval set -- "$PARAMS"; debug "mr_init($@)"
+	local name='NA' owner='NA' email='N@A' dir='' conf=''
+	while : ; do
+		case "$1" in
+		-n|--name) name="$2"; shift 2; debug "name=$append";;
+		-o|--owner) owner="$2"; shift 2; debug "owner=$mr_file";;
+		-e|--email) email="$2"; shift 2; debug "email=$mr_file";;
+		--) shift; break;;
+		*) echo "Unknown option: $1"; return;;
+		esac
+	done
+	[ $# -gt 1 ] && echo 'Too many arguments.' && return
+	[ $# -eq 1 ] && dir="$1" || dir=.
+	[ ! -d "$dir" ] && echo "$dir is not a valid directory." && return
+	get_repo "$dir"
+	if [ -n "$mrREPO" ]; then
+		echo "$dir is already in a repo($mrREPO)."
+		cat "$mrREPO/.mrc"
+		read -p "Configure the repo with your values(y/n)? " -n 1 -r
+		[[ ! $REPLY =~ ^[Yy]$ ]] && return
+		conf="$mrREPO/.mrc"
+		echo; echo "Updating configuration:"
+	else
+		conf="$dir/.mrc"
+		echo "Creating MindRiver repository:"
+	fi
+	[ -n "$name" ] && set_conf "$conf" MR_REPO_NAME "$name"
+	[ -n "$owner" ] && set_conf "$conf" MR_REPO_OWNER "$owner"
+	[ -n "$email" ] && set_conf "$conf" MR_REPO_EMAIL "$email"
+	cat "$conf"
+}
 #=== FILE ======================================================================
 mrLOG=''
 get_log() { # $1=file $2=ln return:0/1/2,mrLOG
@@ -580,8 +626,8 @@ process_command() {
 	[ $# -eq 0 ] && usage && return 0  #No arg, show usage
 
 	case "$1" in  #$1 is command
-	init) [ $help_me != true ] && echo "Not sourced."; usage_init;;
 	clean) [ $help_me != true ] && echo "Not sourced."; usage_clean;;
+	init) shift; [ $help_me = true ] && usage_init || mr_init "$@";;
 	a|add) shift; [ $help_me == true ] && usage_add || mr_add "$@";;
 	v|view) shift; [ $help_me == true ] && usage_view || mr_view "$@";;
 	e|ed|edit) shift; [ $help_me == true ] && usage_edit || mr_edit "$@";;
