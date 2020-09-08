@@ -78,22 +78,24 @@ debug() { [ $debug == true ] && >&2 echo "$@"; }
 # only "$@" can trans args properly, $@/$*/"$*" can't.
 str_trim() { echo "$1" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//'; }
 
-#=== INIT and CLEAN's usage ====================================================
-usage_init() {
-	cat<<-EOF
-Usage: . ${BASH_SOURCE[0]#$PWD/} init [OPTION]...
-This command should be "sourced".
-Arguments:
-  -c, --command=CMD
-  -f, --file=FILE
-      --shell
-	EOF
-}
-
+#=== CLEAN's usage ============================================================
 usage_clean() {
 	cat<<-EOF
 Usage: . ${BASH_SOURCE[0]#$PWD/} clean
 This command should be "sourced".
+	EOF
+}
+
+#=== INIT ======================================================================
+usage_init() {
+	cat<<-EOF
+Usage: $(basename ${BASH_SOURCE[0]}) init [OPTION]... [DIRECTORY]
+Create an empty MindRiver repository or reinitialize an existing one,
+in a DIRECTORY, or if not provided, the working directory.
+Basically a .mrc file with configurations specified in OPTIONs:
+  -n, --name=NAME    Set the NAME of the repository.
+  -o, --owner=OWNER  Set the name of the OWNER of the repository.
+  -e, --email=EMAIL  Set the EMAIL address of the owner.
 	EOF
 }
 
