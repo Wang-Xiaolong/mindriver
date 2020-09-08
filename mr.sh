@@ -115,7 +115,7 @@ mr_init() {
 	PARAMS=$(getopt -o n:o:e: -l name:,owner:,email: -n 'mr_init' -- "$@")
 	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
 	eval set -- "$PARAMS"; debug "mr_init($@)"
-	local name='NA' owner='NA' email='N@A' dir='' conf=''
+	local name='' owner='' email='' dir='' conf=''
 	while : ; do
 		case "$1" in
 		-n|--name) name="$2"; shift 2; debug "name=$append";;
@@ -132,12 +132,14 @@ mr_init() {
 	if [ -n "$mrREPO" ]; then
 		echo "$dir is already in a repo($mrREPO)."
 		cat "$mrREPO/.mrc"
+		[ -z "$name$owner$email" ] && return
 		read -p "Configure the repo with your values(y/n)? " -n 1 -r
 		[[ ! $REPLY =~ ^[Yy]$ ]] && return
 		conf="$mrREPO/.mrc"
 		echo; echo "Updating configuration:"
 	else
 		conf="$dir/.mrc"
+		[ -z "$name$owner$email" ] && name=NA
 		echo "Creating MindRiver repository:"
 	fi
 	[ -n "$name" ] && set_conf "$conf" MR_REPO_NAME "$name"
