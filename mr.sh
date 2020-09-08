@@ -260,7 +260,7 @@ Arguments:
 }
 
 mr_edit() {
-	PARAMS=$(getopt -o af: -l append,file: -n 'mr_init' -- "$@")
+	PARAMS=$(getopt -o af: -l append,file: -n 'mr_edit' -- "$@")
 	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
 	eval set -- "$PARAMS"; debug "mr_edit($@)"
 	local mr_file=$MR_FILE
