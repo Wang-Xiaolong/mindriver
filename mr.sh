@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#=== Sourced: INIT and CLEAN ===================================================
+#=== Sourced: NONE and CLEAN ===================================================
 if [[ $_ != $0 ]]; then # script is being sourced
 	if [ $# -eq 0 ]; then
 		echo "Command alias:"
