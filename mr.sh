@@ -14,7 +14,7 @@ if [[ $_ != $0 ]]; then # script is being sourced
 			$(realpath ${BASH_SOURCE[0]}) "$@"; return
 		fi
 	done
-	if [ "$1" == clean ]; then
+	if [ "$1" = clean ]; then
 		if [ -n "$MR_SH" ]; then
 			mr_aliases=$(alias | grep "$MR_SH" \
 				| sed -e 's/=.*//' -e 's/alias //')
@@ -74,7 +74,7 @@ You can run 'mr <command> <-h|--help|-?>' to get the document of each command.
 	EOF
 }
 
-debug() { [ $debug == true ] && >&2 echo "$@"; }
+debug() { [ $debug = true ] && >&2 echo "$@"; }
 # only "$@" can trans args properly, $@/$*/"$*" can't.
 str_trim() { echo "$1" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//'; }
 
@@ -167,7 +167,7 @@ edit_msg() { # $1=old_msg
 	vim $tempf
 	[ -f $tempf ] && mrMSG=$(cat $tempf) || return 1
 	rm -f $tempf
-	[ -n "$1" ] && [ "$1" == "$mrMSG" ] && echo "No change." && return 2
+	[ -n "$1" ] && [ "$1" = "$mrMSG" ] && echo "No change." && return 2
 	return 0
 }
 set_msg() { # $1=msg, if omitted, use $mrMSG; based on mrLOG
@@ -566,9 +566,9 @@ mr_list() {
 			fi; debug "from=$fr; to=$to"
 			shift 2;;
 		-s|--sort)
-			if [ "$2" == "l" ]; then
+			if [ "$2" = l ]; then
 				s="-n -k3.4"
-			elif [ "$2" == "m" ]; then
+			elif [ "$2" = m ]; then
 				s="-n -k2.4"
 			else
 				echo "Unsupported sort $s."
@@ -630,15 +630,15 @@ process_command() {
 	case "$1" in  #$1 is command
 	clean) [ $help_me != true ] && echo "Not sourced."; usage_clean;;
 	init) shift; [ $help_me = true ] && usage_init || mr_init "$@";;
-	a|add) shift; [ $help_me == true ] && usage_add || mr_add "$@";;
-	v|view) shift; [ $help_me == true ] && usage_view || mr_view "$@";;
-	e|ed|edit) shift; [ $help_me == true ] && usage_edit || mr_edit "$@";;
-	m|mv|move) shift; [ $help_me == true ] && usage_move || mr_move "$@";;
-	l|log) shift; [ $help_me == true ] && usage_log || mr_log "$@";;
-	ls|list) shift; [ $help_me == true ] && usage_list || mr_list "$@";;
-	sh|shell) [ $in_shell == false ] && mr_shell "$@"\
+	a|add) shift; [ $help_me = true ] && usage_add || mr_add "$@";;
+	v|view) shift; [ $help_me = true ] && usage_view || mr_view "$@";;
+	e|ed|edit) shift; [ $help_me = true ] && usage_edit || mr_edit "$@";;
+	m|mv|move) shift; [ $help_me = true ] && usage_move || mr_move "$@";;
+	l|log) shift; [ $help_me = true ] && usage_log || mr_log "$@";;
+	ls|list) shift; [ $help_me = true ] && usage_list || mr_list "$@";;
+	sh|shell) [ $in_shell = false ] && mr_shell "$@"\
 		|| echo "We are already in the mind river shell.";;
-	exit) [ $in_shell == true ] && in_shell=false \
+	exit) [ $in_shell = true ] && in_shell=false \
 		|| echo "exit is a mind river shell command.";;
 	help) usage;;
 	version) echo "0.03 2020-06-15 paulo.dx@gmail.com";;
@@ -648,7 +648,7 @@ process_command() {
 }
 
 mr_shell() {
-	[ $help_me == true ] && usage_shell && return
+	[ $help_me = true ] && usage_shell && return
 
 	in_shell=true
 	while : ; do # infinite loop
@@ -656,7 +656,7 @@ mr_shell() {
 		read args
 		eval set -- "$args"
 		process_command "$@"
-		[ $in_shell == false ] && break
+		[ $in_shell = false ] && break
 	done
 }
 #=== MAIN ======================================================================
