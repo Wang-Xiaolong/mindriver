@@ -224,10 +224,16 @@ delete_log() { # $1=file $2=ln
 #=== ADD =======================================================================
 usage_add() {
 	cat<<-EOF
-Usage: mr add [OPTION]... [MESSAGE]...
-Arguments:
-  -a, --append=LN
-  -f, --file=FILE
+Usage: $(basename ${BASH_SOURCE[0]}) add [OPTION]... [MESSAGE]...
+Add MESSAGE to the working thread. If no MESSAGE provided,
+the text EDITOR will be launched to edit a complex message.
+  -a, --append=MSG_ID  Append the MESSAGE to the tail of an existing message
+                       specified by the MSG_ID.
+  -e, --editor=EDITOR  Launch the EDITOR instead of the default one or the
+                       pre-defined one.
+  -f, --file=PATH      Set the PATH of the thread file to be added to.
+  -t, --thread=TH_ID   Add the MESSAGE to the TH_ID specified thread
+                       instead of the working thread.
 	EOF
 }
 
