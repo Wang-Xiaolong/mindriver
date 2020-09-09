@@ -231,9 +231,8 @@ the text EDITOR will be launched to edit a complex message.
                        specified by the MSG_ID.
   -e, --editor=EDITOR  Launch the EDITOR instead of the default one or the
                        pre-defined one.
-  -f, --file=PATH      Set the PATH of the thread file to be added to.
-  -t, --thread=TH_ID   Add the MESSAGE to the TH_ID specified thread
-                       instead of the working thread.
+  -f, --file=FILE      Specify the thread FILE to be added to
+                       by its path, #id or #alias.
 	EOF
 }
 
