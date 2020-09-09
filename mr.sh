@@ -96,6 +96,14 @@ Basically a .mrc file with configurations specified in OPTIONs:
   -n, --name=NAME    Set the NAME of the repository.
   -o, --owner=OWNER  Set the name of the OWNER of the repository.
   -e, --email=EMAIL  Set the EMAIL address of the owner.
+  -x, --ext=EXT      Set the EXTension of the thread file, by default it's 'mr',
+                     meaning *.mr will be treated as MindRiver thread files.
+		     Change it here if 'mr' has conflict with your system.
+  -t, --temp=TEMP    Set the default extension of the TEMPorary file abstracted
+                     from the thread when a message is being editted.
+		     It's for the text editor to use your favorite highlighting.
+		     'marktree' is the default option for a vim plug-in of mine:
+		     https://github.com/Wang-Xiaolong/vim-marktree
 	EOF
 }
 mrREPO=''
