@@ -120,15 +120,18 @@ set_conf() { # $1=fp $2=key $3=value
 	sed -i "s/\($2=\).*/\1'$3'/" "$1"
 }
 mr_init() {
-	PARAMS=$(getopt -o n:o:e: -l name:,owner:,email: -n 'mr_init' -- "$@")
+	PARAMS=$(getopt -o n:o:e:x:t: -l name:,owner:,email:,ext:,temp:\
+		-n 'mr_init' -- "$@")
 	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
 	eval set -- "$PARAMS"; debug "mr_init($@)"
-	local name='' owner='' email='' dir='' conf=''
+	local name='' owner='' email='' ext='' temp='' dir='' conf=''
 	while : ; do
 		case "$1" in
 		-n|--name) name="$2"; shift 2; debug "name=$append";;
-		-o|--owner) owner="$2"; shift 2; debug "owner=$mr_file";;
-		-e|--email) email="$2"; shift 2; debug "email=$mr_file";;
+		-o|--owner) owner="$2"; shift 2; debug "owner=$owner";;
+		-e|--email) email="$2"; shift 2; debug "email=$email";;
+		-x|--ext) ext="$2"; shift 2; debug "ext=$ext";;
+		-t|--temp) temp="$2"; shift 2; debug "temp=$temp";;
 		--) shift; break;;
 		*) echo "Unknown option: $1"; return;;
 		esac
@@ -140,19 +143,22 @@ mr_init() {
 	if [ -n "$mrREPO" ]; then
 		echo "$dir is already in a repo($mrREPO)."
 		cat "$mrREPO/.mrc"
-		[ -z "$name$owner$email" ] && return
+		[ -z "$name$owner$email$ext$temp" ] && return
 		read -p "Configure the repo with your values(y/n)? " -n 1 -r
 		[[ ! $REPLY =~ ^[Yy]$ ]] && return
 		conf="$mrREPO/.mrc"
 		echo; echo "Updating configuration:"
-	else
+	else # create new repo
 		conf="$dir/.mrc"
-		[ -z "$name$owner$email" ] && name=NA
+		[ -z "$ext" ] && ext=mr
+		[ -z "$temp" ] && temp=marktree
 		echo "Creating MindRiver repository:"
 	fi
 	[ -n "$name" ] && set_conf "$conf" MR_REPO_NAME "$name"
 	[ -n "$owner" ] && set_conf "$conf" MR_REPO_OWNER "$owner"
 	[ -n "$email" ] && set_conf "$conf" MR_REPO_EMAIL "$email"
+	[ -n "$ext" ] && set_conf "$conf" MR_REPO_EXT "$ext"
+	[ -n "$temp" ] && set_conf "$conf" MR_REPO_TEMP "$temp"
 	cat "$conf"
 }
 #=== FILE ======================================================================
