@@ -247,7 +247,7 @@ mr_add() {
 	while : ; do
 		case "$1" in
 		-a|--append) append="$2"; shift 2; debug "append=$append";;
-		-f|--file) file="$2"; shift 2; debug "mr_file=$file";;
+		-f|--file) file="$2"; shift 2; debug "file=$file";;
 		--) shift; break;;
 		*) echo "Unknown option: $1"; return;;
 		esac
