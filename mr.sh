@@ -243,26 +243,26 @@ mr_add() {
 	PARAMS=$(getopt -o a:f: -l append:,file: -n 'mr_add' -- "$@")
 	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
 	eval set -- "$PARAMS"; debug "mr_add($@)"
-	local append=""; local mr_file=$MR_FILE
+	local append='' file="$MR_FILE"
 	while : ; do
 		case "$1" in
 		-a|--append) append="$2"; shift 2; debug "append=$append";;
-		-f|--file) mr_file="$2"; shift 2; debug "mr_file=$mr_file";;
+		-f|--file) file="$2"; shift 2; debug "mr_file=$file";;
 		--) shift; break;;
 		*) echo "Unknown option: $1"; return;;
 		esac
 	done
 	local message="$*"; debug "message=$message"
 
-	if [ ! -f "$mr_file" ]; then
-		echo "$mr_file not found, will be created."
+	if [ ! -f "$file" ]; then
+		echo "$file not found, will be created."
 		[ -n "$append" ] && echo "No line#$append." && return
 	elif [ -n "$append" ]; then
 		if [[ ! $append =~ $NUMRE ]]; then
 			echo "$append is not a number."
 			return
 		fi
-		lc=$(wc -l "$mr_file" | cut -d " " -f1); debug "lc=$lc"
+		lc=$(wc -l "$file" | cut -d " " -f1); debug "lc=$lc"
 		if (( $append > $lc )) || (( $append < 1 )); then
 			echo "No line#$append."
 			return
@@ -278,12 +278,12 @@ mr_add() {
 		echo "Empty message, cancel."
 	elif [ -z "$append" ]; then
 		datestr=$(date '+%s')
-		echo "$datestr<nF>${message//$'\n'/<nL>}" >> $mr_file
+		echo "$datestr<nF>${message//$'\n'/<nL>}" >> $file
 	else #append
-		get_log "$mr_file" $append
+		get_log "$file" $append
 		[ $? -ne 0 ] && return
 		mrLOG=$(append_msg "$message")
-		update_log "$mr_file" $append
+		update_log "$file" $append
 	fi
 }
 #=== VIEW ======================================================================
