@@ -4,8 +4,6 @@ if [[ $_ != $0 ]]; then # script is being sourced
 	if [ $# -eq 0 ]; then
 		echo "Command alias:"
 		alias | grep $(basename ${BASH_SOURCE[0]})
-		echo "Log file name extension: $MR_EXT"
-		echo "Default file type: $MR_TYPE"
 		echo "Current file: $MR_FILE"
 		return
 	fi
@@ -23,11 +21,11 @@ if [[ $_ != $0 ]]; then # script is being sourced
 				unalias $a; echo "Unalias $a"
 			done <<< "$mr_aliases"; unset mr_aliases
 		fi
-		export -n MR_SH MR_EXT MR_TYPE MR_FILE
+		export -n MR_SH MR_FILE
 		return
 	fi
-	mr_params=$(getopt -o c:e:t:f: \
-		-l command:,ext:,type:,file:,shell \
+	mr_params=$(getopt -o c:f: \
+		-l command:,file: \
 		-n 'mr_source' -- "$@")
 	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
 	eval set -- "$mr_params"
@@ -37,24 +35,15 @@ if [[ $_ != $0 ]]; then # script is being sourced
 			alias $2="$MR_SH"
 			echo "Command alias $2 was setup."
 			shift 2;;
-		-e|--ext) export MR_EXT="$2"
-			echo "Log file name extension: $MR_EXT"
-			shift 2;;
-		-t|--type) export MR_TYPE="$2"
-			echo "Default file type: $MR_TYPE"
-			shift 2;;
 		-f|--file) export MR_FILE="$(realpath $2)"
 			echo "Current file: $MR_FILE"
 			shift 2;;
-		--shell) mr_shell=true; shift;;
 		--) shift; break;;
 		*) echo "Unknown option: $1"; return;;
 		esac
 	done; unset mr_params
 	[ -z "$MR_SH" ] && echo "Error: No -c CMD, no command to use."
 	[ -z "$MR_FILE" ] && echo "Warning: No -f FILE by default."
-	[ -z "$MR_EXT" ] && echo "Warning: No -e EXT, no log/ls."
-	[ -z "$MR_TYPE" ] && echo "Warning: No -t TYPE by default."
 	return
 fi
 #=== PUBLIC FUNCTIONS ==========================================================
@@ -527,7 +516,7 @@ BEGIN { FS="<nF>" }
 mr_log_dir() { # $1=file $2=verbose $3=mono $4=from $5=to
 	debug "mr_log_dir($@)"
 	[ -z "$MR_EXT" ] && echo "No EXT set, exit." && return 0
-	local mr_files=$(find $1 -name "*.$MR_$MR_EXT")
+	local mr_files=$(find $1 -name "*.$MR_EXT")
 	mr_log_collect "$mr_files" "$1" "$4" "$5" ''
 	echo "$mrLOGS" | sort -n -t '<' -k1 | awk -v v="$2" -v n="$3" '
 BEGIN { FS="<nF>" }
@@ -681,14 +670,7 @@ BEGIN { FS="<nF>" }
 	print head""sep""msg
 }'
 }
-#=== SHELL =====================================================================
-usage_shell() {  #heredoc
-	cat<<-EOF
-Shell-like environment, where you can run gtd commands without typing 'gtd'.
-	EOF
-}
-
-in_shell=false
+#=== MAIN ======================================================================
 process_command() {
 	[ $# -eq 0 ] && usage && return 0  #No arg, show usage
 
@@ -701,10 +683,6 @@ process_command() {
 	m|mv|move) shift; [ $help_me = true ] && usage_move || mr_move "$@";;
 	l|log) shift; [ $help_me = true ] && usage_log || mr_log "$@";;
 	ls|list) shift; [ $help_me = true ] && usage_list || mr_list "$@";;
-	sh|shell) [ $in_shell = false ] && mr_shell "$@"\
-		|| echo "We are already in the mind river shell.";;
-	exit) [ $in_shell = true ] && in_shell=false \
-		|| echo "exit is a mind river shell command.";;
 	help) usage;;
 	version) echo "0.03 2020-06-15 paulo.dx@gmail.com";;
 	*) echo "Incorrect command: $1"; usage;;
@@ -712,19 +690,6 @@ process_command() {
 	return 0
 }
 
-mr_shell() {
-	[ $help_me = true ] && usage_shell && return
-
-	in_shell=true
-	while : ; do # infinite loop
-		printf "$(basename $MR_FILE)# "
-		read args
-		eval set -- "$args"
-		process_command "$@"
-		[ $in_shell = false ] && break
-	done
-}
-#=== MAIN ======================================================================
 [ $# -eq 0 ] && usage && exit # bkm for no arg check
 
 # process help & debug before other options
