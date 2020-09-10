@@ -231,34 +231,80 @@ the text EDITOR will be launched to edit a complex message.
                        specified by the MSG_ID.
   -e, --editor=EDITOR  Launch the EDITOR instead of the default one or the
                        pre-defined one.
-  -f, --file=FILE      Specify the thread FILE to be added to
-                       by its path, #id or #alias.
+  -f, --file=FILE      Specify the thread FILE to be added to.
+  -i, --id=ID          Specify the thread FILE by it's ID number.
 	EOF
 }
 
 NUMRE='^[0-9]+$'
 
 mr_add() {
-	PARAMS=$(getopt -o a:f: -l append:,file: -n 'mr_add' -- "$@")
+	PARAMS=$(getopt -o a:f:i: -l append:,file:,id: -n 'mr_add' -- "$@")
 	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
 	eval set -- "$PARAMS"; debug "mr_add($@)"
-	local append='' file="$MR_FILE"
+	local append='' file='' id=''
 	while : ; do
 		case "$1" in
 		-a|--append) append="$2"; shift 2; debug "append=$append";;
 		-f|--file) file="$2"; shift 2; debug "file=$file";;
+		-i| --id) id="$2"; shift 2; debug "id=$id";;
 		--) shift; break;;
 		*) echo "Unknown option: $1"; return;;
 		esac
 	done
 	local message="$*"; debug "message=$message"
 
-	if [ ! -f "$file" ]; then
-		echo "$file not found, will be created."
-		[ -n "$append" ] && echo "No line#$append." && return
-	elif [ -n "$append" ]; then
+	if [ -n "$file" ]; then
+		if [ ! -f "$file" ]; then
+			echo "$file not found."
+			return
+		fi
+	elif [ -n "$id" ]; then
+		get_repo . ; debug "mrREPO=$mrREPO"
+		if [ -z "$mrREPO" ]; then
+			echo "You're not in a MindRiver repo!"
+			return
+		fi
+		source "$mrREPO/.mrc"
+		[ -z "$MR_REPO_EXT" ] && echo "No EXT set!" && return
+		if [ "$id" = '+' ]; then
+			local max=$(find "$mrREPO" -type f \
+				-name "*.$MR_REPO_EXT" \
+				-printf "%f\n" | sed "s/.mr//" \
+				| sort -n | tail -1)
+			[ -z "$max" ] && id=1 || id=$(( $max + 1 ))
+			file="./$id.$MR_REPO_EXT"
+		elif [[ "$id" =~ ^[0-9]+$ ]]; then
+			local found=$(find "$mrREPO" -type f \
+				-name "$id.$MR_REPO_EXT")
+			local lc=$(wc -l <<< "$found"); debug "lc=$lc"
+			if [ -z "$found" ]; then
+				echo "No file id $id found."
+				read -p "Create a new file(y/n)? " -n 1 -r
+				[[ ! $REPLY =~ ^[Yy]$ ]] && return
+				file="./$id.$MR_REPO_EXT"
+			elif [ $lc -gt 1 ]; then
+				echo "Conflict! Multiple id $id found:"
+				echo "$found"
+				return
+			else
+				echo "File found: $found"
+				file="$found"
+			fi
+		else
+			echo "Not supported id format: $id"
+		fi
+	else
+		file="$MR_FILE"
+	fi
+
+	if [ -n "$append" ]; then
 		if [[ ! $append =~ $NUMRE ]]; then
 			echo "$append is not a number."
+			return
+		fi
+		if [ ! -f "$file" ]; then
+			echo "No line#$append for no file."
 			return
 		fi
 		lc=$(wc -l "$file" | cut -d " " -f1); debug "lc=$lc"
