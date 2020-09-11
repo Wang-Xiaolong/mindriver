@@ -320,8 +320,9 @@ id2file_plus() { # $1=id, will set mrFILE, mrREPO and source mrREPO/.mrc
 		if [[ "$id" =~ ^[0-9]+$ ]]; then
 			echo "ID $id not found."
 			read -p "Create a new file with it(y/n)? " -n 1 -r
+			echo
 			[[ ! $REPLY =~ ^[Yy]$ ]] && return
-			mrFile="$dir/$id.$MR_REPO_EXT"
+			mrFILE="$dir/$id.$MR_REPO_EXT"
 		else
 			echo "Alias '$id' not found."
 		fi
@@ -352,12 +353,13 @@ mr_add() {
 
 	local file=''
 	if [ -n "$id" ]; then
-		id2file_plus "$id"
+		id2file_plus "$id"; debug "mrFILE=$mrFILE"
 		file="$mrFILE"
 	else
 		[ ! -f "$MR_FILE" ] && echo "No $MR_FILE!" && return
 		file="$MR_FILE"
 	fi
+	[ -z "$file" ] && echo "No file specified!" && return
 
 	if [ -n "$append" ]; then
 		if [ ! -f "$file" ]; then
@@ -380,6 +382,7 @@ mr_add() {
 		echo "Empty message, cancel."
 	elif [ -z "$append" ]; then
 		datestr=$(date '+%s')
+		[ ! -f "$file" ] && echo "$file will be created."
 		echo "$datestr<nF>${message//$'\n'/<nL>}" >> $file
 	else #append
 		get_log "$file" $append
