@@ -194,7 +194,7 @@ get_ts() { sed -e 's/\(^[0-9]\+\).*/\1/' <<< $mrLOG; }
 get_msg() { sed -e 's/^[0-9]\+<nF>//' -e 's/<nL>/\n/g' <<< $mrLOG; }
 mrMSG=''
 edit_msg() { # $1=old_msg
-	local type=''; [ -n "$MR_TYPE" ] && type=".$MR_TYPE"
+	local type=''; [ -n "$MR_REPO_TEMP" ] && type=".$MR_REPO_TEMP"
 	local tempf=$(mktemp -u -t mr.XXXXXXXX$type)
 	[ -n "$1" ] && echo "$1" > $tempf
 	vim $tempf
@@ -394,7 +394,7 @@ mr_add() {
 #=== VIEW ======================================================================
 usage_view() {
 	cat<<-EOF
-Usage: mr view [OPTION]... [LN]...
+Usage: $(basename ${BASH_SOURCE[0]}) view [OPTION]... [LN]...
 Arguments:
   -f, --file=FILE
   -l, --linenum
@@ -426,25 +426,27 @@ mr_view() {
 #=== EDIT ======================================================================
 usage_edit() {
 	cat<<-EOF
-Usage: mr edit [OPTION]... LN [EXPRESSION]...
-Arguments:
-  -f, --file
+Usage: $(basename ${BASH_SOURCE[0]}) edit [OPTION]... MSG_ID [EXPRESSION]...
+Edit a message in a thread, specialized by the MSG_ID.
+  -i, --id  Sepcify the thread file.
 	EOF
 }
 
 mr_edit() {
-	PARAMS=$(getopt -o af: -l append,file: -n 'mr_edit' -- "$@")
+	PARAMS=$(getopt -o i: -l id: -n 'mr_edit' -- "$@")
 	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
 	eval set -- "$PARAMS"; debug "mr_edit($@)"
 	local mr_file=$MR_FILE
 	while : ; do
 		case "$1" in
-		-f|--file) mr_file=$2; shift 2;;
+		-i|--id) id2file "$2"
+			[ -z "$mrFILE" ] && echo "$2 not found." && return
+			mr_file="$mrFILE"; shift 2;;
 		--) shift; break;;
 		*) echo "Unknown option: $1"; return;;
 		esac
 	done
-	[ -z "$mr_file" ] && echo "No file specified." && return
+	[ ! -f "$mr_file" ] && echo "$mr_file doesn't exist." && return
 	[ -z "$1" ] && echo "No log# specified!" && return
 	local ln=$1; shift; debug "ln=$ln"
 	local exps="$*"; debug "exps=$exps"
