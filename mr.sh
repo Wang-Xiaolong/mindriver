@@ -716,7 +716,7 @@ process_command() {
 	return 0
 }
 
-[ $# -eq 0 ] && usage && exit # bkm for no arg check
+[ $# -eq 0 ] && echo "Current File: $MR_FILE" && exit
 
 # process help & debug before other options
 args=() # empty array
