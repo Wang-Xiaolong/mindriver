@@ -42,7 +42,7 @@ if [[ $_ != $0 ]]; then # script is being sourced
 	IFS=':' read -ra MR_ID <<< "$mr_id"
 	if [ ${#MR_ID[@]} -eq 1 ]; then
 		mr_id="${MR_ID[0]}" mr_dir=.
-	elif [ ${#ID[@]} -eq 2 ]; then
+	elif [ ${#MR_ID[@]} -eq 2 ]; then
 		mr_id="${MR_ID[1]}" mr_dir="${MR_ID[0]}"
 	else
 		echo "Bad num of ':'s(${#MR_ID[@]}) in id!"
@@ -264,7 +264,7 @@ id2file() { # $1=id, will set mrFILE, mrREPO and source mrREPO/.mrc
 	IFS=':' read -ra MR_ID <<< "$1"
 	if [ ${#MR_ID[@]} -eq 1 ]; then
 		id="${MR_ID[0]}" dir=.
-	elif [ ${#ID[@]} -eq 2 ]; then
+	elif [ ${#MR_ID[@]} -eq 2 ]; then
 		id="${MR_ID[1]}" dir="${MR_ID[0]}"
 	else
 		echo "Bad num of ':'s(${#MR_ID[@]}) in id!"; return
@@ -292,7 +292,7 @@ id2file_plus() { # $1=id, will set mrFILE, mrREPO and source mrREPO/.mrc
 	IFS=':' read -ra MR_ID <<< "$1"
 	if [ ${#MR_ID[@]} -eq 1 ]; then
 		id="${MR_ID[0]}" dir=.
-	elif [ ${#ID[@]} -eq 2 ]; then
+	elif [ ${#MR_ID[@]} -eq 2 ]; then
 		id="${MR_ID[1]}" dir="${MR_ID[0]}"
 	else
 		echo "Bad num of ':'s(${#MR_ID[@]}) in id!"; return
