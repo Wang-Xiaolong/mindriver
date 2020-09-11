@@ -24,24 +24,54 @@ if [[ $_ != $0 ]]; then # script is being sourced
 		export -n MR_SH MR_FILE
 		return
 	fi
-	mr_params=$(getopt -o c:f: \
-		-l command:,file: \
-		-n 'mr_source' -- "$@")
+	mr_params=$(getopt -o c:i: -l command:,id: -n 'mr_src' -- "$@")
 	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
 	eval set -- "$mr_params"
 	while : ; do
 		case "$1" in
 		-c|--command) export MR_SH="$(realpath ${BASH_SOURCE[0]})"
 			alias $2="$MR_SH"
-			echo "Command alias $2 was setup."
+			echo "Command alias '$2' was setup."
 			shift 2;;
-		-f|--file) export MR_FILE="$(realpath $2)"
-			echo "Current file: $MR_FILE"
-			shift 2;;
+		-i|--id) mr_id="$2"; shift 2;;
 		--) shift; break;;
-		*) echo "Unknown option: $1"; return;;
+		*) echo "Unknown option: $1"; unset mr_params mr_id; return;;
 		esac
 	done; unset mr_params
+	[ -z "$mr_id" ] && return
+	IFS=':' read -ra MR_ID <<< "$mr_id"
+	if [ ${#MR_ID[@]} -eq 1 ]; then
+		mr_id="${MR_ID[0]}" mr_dir=.
+	elif [ ${#ID[@]} -eq 2 ]; then
+		mr_id="${MR_ID[1]}" mr_dir="${MR_ID[0]}"
+	else
+		echo "Bad num of ':'s(${#MR_ID[@]}) in id!"
+		unset MR_ID mr_id; return
+	fi; unset MR_ID
+	[ -z "$mr_id" ] && echo "Empty id!" && unset mr_id mr_dir && return
+	[ ! -d "$mr_dir" ] && echo "No directory $mr_dir" \
+		&& unset mr_id mr_dir && return
+	mr_repo=''
+	dir=$(realpath "$mr_dir")
+	while [ "$dir" != / ]; do
+		[ -f "$dir/.mrc" ] && mr_repo="$dir" && break
+		dir=$(dirname "$dir")
+	done; unset dir mr_dir
+	[ -z "$mr_repo" ] && echo "$mr_dir is not in a repo" \
+		&& unset mr_id mr_repo && return
+	eval $(grep 'MR_REPO_EXT=' "$mr_repo/.mrc")
+	[ -z "$MR_REPO_EXT" ] && echo "No MR_REPO_EXT set in the repo!" \
+		&& unset mr_id mr_repo && return
+	[[ "$mr_id" =~ ^[0-9]+$ ]] && re=".*[./]$mr_id.$MR_REPO_EXT" \
+		|| re=".*/$mr_id\.[0-9]+\.$MR_REPO_EXT"; unset mr_id MR_REPO_EXT
+	found=$(find "$mr_repo" -regex "$re"); unset re mr_repo
+	[ -z "$found" ] && echo "File not found." && unset found && return
+	lc=$(wc -l <<< "$found")
+	[ $lc -gt 1 ] && echo "Conflict! Multiple files found:" \
+		&& echo "$found" && unset found lc && return; unset lc
+	export MR_FILE="$found"; unset found
+	echo "Current file: $MR_FILE"
+
 	[ -z "$MR_SH" ] && echo "Error: No -c CMD, no command to use."
 	[ -z "$MR_FILE" ] && echo "Warning: No -f FILE by default."
 	return
