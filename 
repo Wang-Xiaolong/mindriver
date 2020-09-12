@@ -4,7 +4,7 @@ if [[ $_ != $0 ]]; then # script is being sourced
 	if [ $# -eq 0 ]; then
 		echo "Command alias:"
 		alias | grep $(basename ${BASH_SOURCE[0]})
-		echo "Current file: ${MR_FILE#$PWD/}"
+		echo "Current file: $MR_FILE"
 		return
 	fi
 	for a in "$@"; do
@@ -24,7 +24,7 @@ if [[ $_ != $0 ]]; then # script is being sourced
 		export -n MR_SH MR_FILE
 		return
 	fi
-	mr_params=$(getopt -o c:f: -l command:,file: -n 'mr_src' -- "$@")
+	mr_params=$(getopt -o c:i: -l command:,id: -n 'mr_src' -- "$@")
 	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
 	eval set -- "$mr_params"
 	while : ; do
@@ -33,52 +33,49 @@ if [[ $_ != $0 ]]; then # script is being sourced
 			alias $2="$MR_SH"
 			echo "Command alias '$2' was setup."
 			shift 2;;
-		-f|--file) file="$2"; shift 2;;
+		-f|--file) mr_file="$2"; shift 2;;
 		--) shift; break;;
 		*) echo "Unknown option: $1"; unset mr_params mr_id; return;;
 		esac
 	done; unset mr_params
 	[ -z "$MR_SH" ] && echo "Error: No -c CMD, no command to use."
-	[ -z "$file" ] && return
-	if [ -f "$file" ]; then
-		export MR_FILE="$file"; unset file
+	[ -z "$mr_file" ] && return
+	if [ -f "$mr_file" ]; then
+		export MR_FILE="$mr_file"; unset mr_file
 	else
-		id=$file; unset file
-		IFS=':' read -ra MR_ID <<< "$id"
+		IFS=':' read -ra MR_ID <<< "$mr_id"
 		if [ ${#MR_ID[@]} -eq 1 ]; then
-			id="${MR_ID[0]}" dir=.
+			mr_id="${MR_ID[0]}" mr_dir=.
 		elif [ ${#MR_ID[@]} -eq 2 ]; then
-			id="${MR_ID[1]}" dir="${MR_ID[0]}"
+			mr_id="${MR_ID[1]}" mr_dir="${MR_ID[0]}"
 		else
 			echo "Bad num of ':'s(${#MR_ID[@]}) in id!"
-			unset MR_ID id; return
+			unset MR_ID mr_id; return
 		fi; unset MR_ID
-		[ -z "$id" ] && echo "Empty id!" \
-			&& unset id dir && return
-		[ ! -d "$dir" ] && echo "No directory $dir!" \
-			&& unset id dir && return
-		repo='' d=$(realpath "$dir")
-		while [ "$d" != / ]; do
-			[ -f "$d/.mrc" ] && repo="$d" && break
-			d=$(dirname "$d")
-		done; unset d
-		[ -z "$repo" ] && echo "$dir is not in a repo" \
-			&& unset id dir repo && return; unset dir
-		eval $(grep 'MR_REPO_EXT=' "$repo/.mrc")
-		[ -z "$MR_REPO_EXT" ] && echo "No MR_REPO_EXT set!" \
-			&& unset id repo && return
-		[[ "$id" =~ ^[0-9]+$ ]] && re=".*[./]$id.$MR_REPO_EXT" \
-			|| re=".*/$id\.[0-9]+\.$MR_REPO_EXT"
-		unset id MR_REPO_EXT
-		found=$(find "$repo" -regex "$re"); unset re repo
-		[ -z "$found" ] && echo "File not found." \
-			&& unset found && return
+		[ -z "$mr_id" ] && echo "Empty id!" && unset mr_id mr_dir && return
+		[ ! -d "$mr_dir" ] && echo "No directory $mr_dir" \
+			&& unset mr_id mr_dir && return
+		mr_repo=''
+		dir=$(realpath "$mr_dir")
+		while [ "$dir" != / ]; do
+			[ -f "$dir/.mrc" ] && mr_repo="$dir" && break
+			dir=$(dirname "$dir")
+		done; unset dir mr_dir
+		[ -z "$mr_repo" ] && echo "$mr_dir is not in a repo" \
+			&& unset mr_id mr_repo && return
+		eval $(grep 'MR_REPO_EXT=' "$mr_repo/.mrc")
+		[ -z "$MR_REPO_EXT" ] && echo "No MR_REPO_EXT set in the repo!" \
+			&& unset mr_id mr_repo && return
+		[[ "$mr_id" =~ ^[0-9]+$ ]] && re=".*[./]$mr_id.$MR_REPO_EXT" \
+			|| re=".*/$mr_id\.[0-9]+\.$MR_REPO_EXT"; unset mr_id MR_REPO_EXT
+		found=$(find "$mr_repo" -regex "$re"); unset re mr_repo
+		[ -z "$found" ] && echo "File not found." && unset found && return
 		lc=$(wc -l <<< "$found")
 		[ $lc -gt 1 ] && echo "Conflict! Multiple files found:" \
 			&& echo "$found" && unset found lc && return; unset lc
 		export MR_FILE="$found"; unset found
 	fi
-	echo "Current file: ${MR_FILE#$PWD/}"
+	echo "Current file: $MR_FILE"
 	return
 fi
 #=== PUBLIC FUNCTIONS ==========================================================
