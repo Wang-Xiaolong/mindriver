@@ -262,9 +262,10 @@ the text EDITOR will be launched to edit a complex message.
 
 NUMRE='^[0-9]+$'
 mrFILE=''
-id2file() { # $1=id, will set mrFILE, mrREPO and source mrREPO/.mrc
+arg2file() { # $1=arg, will set mrFILE, mrREPO and source mrREPO/.mrc
 	mrFILE=''
 	[ -z "$1" ] && return
+	[ -f "$1" ] && mrFILE=$1 && return
 	local id='' dir='' re=''
 	IFS=':' read -ra MR_ID <<< "$1"
 	if [ ${#MR_ID[@]} -eq 1 ]; then
@@ -289,10 +290,11 @@ id2file() { # $1=id, will set mrFILE, mrREPO and source mrREPO/.mrc
 		&& echo "$found" && return
 	mrFILE="$found"
 }
-# id2file with new file creation
-id2file_plus() { # $1=id, will set mrFILE, mrREPO and source mrREPO/.mrc
+# arg2file with new file creation
+arg2file_plus() { # $1=id, will set mrFILE, mrREPO and source mrREPO/.mrc
 	mrFILE=''
 	[ -z "$1" ] && return
+	[ -f "$1" ] && mrFILE=$1 && return
 	local id='' dir='' re=''
 	IFS=':' read -ra MR_ID <<< "$1"
 	if [ ${#MR_ID[@]} -eq 1 ]; then
@@ -340,16 +342,16 @@ id2file_plus() { # $1=id, will set mrFILE, mrREPO and source mrREPO/.mrc
 }
 
 mr_add() {
-	PARAMS=$(getopt -o a:i: -l append:,id: -n 'mr_add' -- "$@")
+	PARAMS=$(getopt -o a:f: -l append:,file: -n 'mr_add' -- "$@")
 	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
 	eval set -- "$PARAMS"; debug "mr_add($@)"
-	local append='' id='' dir='.'
+	local append='' f='' dir='.'
 	while : ; do
 		case "$1" in
 		-a|--append) append="$2"; shift 2; debug "append=$append"
 			[[ ! $append =~ $NUMRE ]] && echo \
 				"$append is not a number." && return;;
-		-i|--id) id="$2"; shift 2; debug "id=$id";;
+		-f|--file) f="$2"; shift 2; debug "f(ile)=$f";;
 		--) shift; break;;
 		*) echo "Unknown option: $1"; return;;
 		esac
@@ -357,8 +359,8 @@ mr_add() {
 	local message="$*"; debug "message=$message"
 
 	local file=''
-	if [ -n "$id" ]; then
-		id2file_plus "$id"; debug "mrFILE=$mrFILE"
+	if [ -n "$f" ]; then
+		arg2file_plus "$f"; debug "mrFILE=$mrFILE"
 		file="$mrFILE"
 	else
 		[ ! -f "$MR_FILE" ] && echo "No $MR_FILE!" && return
