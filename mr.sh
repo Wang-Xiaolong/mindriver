@@ -719,13 +719,15 @@ mr_list() {
 	[ $# -gt 1 ] && echo "Support only 1 file or dir." && return
 	[ $# -eq 1 ] && d=$1
 	[ ! -d "$d" ] && echo "$d is not a directory." && return
-	[ -z "$MR_EXT" ] && echo "No EXT set, exit." && return
-	local files=$(find "$d" -name "*.$MR_EXT") lines=''
+	get_repo "$d"; [ -z "$mrREPO" ] && echo "$d is not in a repo." && return
+	eval $(grep 'MR_REPO_EXT=' "$mrREPO/.mrc")
+	[ -z "$MR_REPO_EXT" ] && echo "No MR_REPO_EXT set, exit." && return
+	local files=$(find "$d" -name "*.$MR_REPO_EXT") lines=''
 	[[ $d != */ ]] && d="$d/"
 	while IFS= read -r f; do
 		[ -z "$f" ] && continue
 		[ ! -f "$f" ] && continue
-		local fn=${f#$d}; fn=${fn%.$MR_EXT}; debug "fn=$fn"
+		local fn=${f#$d}; fn=${fn%.$MR_REPO_EXT}; debug "fn=$fn"
 		local mt=$(date -r "$f" "+%s")
 		local latest=$(tail -1 $f)
 		[ -z "$latest" ] && lastest="$mt<nF>--FILE EMPTY--"
