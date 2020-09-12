@@ -435,18 +435,18 @@ usage_edit() {
 	cat<<-EOF
 Usage: $(basename ${BASH_SOURCE[0]}) edit [OPTION]... MSG_ID [EXPRESSION]...
 Edit a message in a thread, specialized by the MSG_ID.
-  -i, --id  Sepcify the thread file.
+  -f, --file  Sepcify the thread file.
 	EOF
 }
 
 mr_edit() {
-	PARAMS=$(getopt -o i: -l id: -n 'mr_edit' -- "$@")
+	PARAMS=$(getopt -o f: -l file: -n 'mr_edit' -- "$@")
 	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
 	eval set -- "$PARAMS"; debug "mr_edit($@)"
 	local mr_file=$MR_FILE
 	while : ; do
 		case "$1" in
-		-i|--id) id2file "$2"
+		-f|--file) arg2file "$2"
 			[ -z "$mrFILE" ] && echo "$2 not found." && return
 			mr_file="$mrFILE"; shift 2;;
 		--) shift; break;;
