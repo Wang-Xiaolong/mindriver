@@ -581,7 +581,7 @@ mr_log_collect() { # $1=files #2=dir $3=from $4=to $5=kw
 	local dir=$2 sep=''; [[ "$dir" != */ ]] && dir="$dir/"
 	while IFS= read -r mr_file; do
 		[ ! -f "$mr_file" ] && continue
-		local fn=${mr_file#$dir}; fn=${fn%.$MR_EXT}; debug "fn=$fn"
+		local fn=${mr_file#$dir}; fn=${fn%.$MR_REPO_EXT}; debug "fn=$fn"
 		local rs=$(awk -v fn="$fn" -v fr="$3" -v to="$4" '
 BEGIN { FS="<nF>" }
 {
@@ -595,8 +595,11 @@ BEGIN { FS="<nF>" }
 
 mr_log_dir() { # $1=file $2=verbose $3=mono $4=from $5=to
 	debug "mr_log_dir($@)"
-	[ -z "$MR_EXT" ] && echo "No EXT set, exit." && return 0
-	local mr_files=$(find $1 -name "*.$MR_EXT")
+	get_repo "$1"
+	[ -z "$mrREPO" ] && echo "$1 is not in a MindRiver repo." && return 0
+	eval $(grep 'MR_REPO_EXT=' "$mrREPO/.mrc")
+	[ -z "$MR_REPO_EXT" ] && echo "No MR_REPO_EXT set, exit." && return 0
+	local mr_files=$(find $1 -name "*.$MR_REPO_EXT")
 	mr_log_collect "$mr_files" "$1" "$4" "$5" ''
 	echo "$mrLOGS" | sort -n -t '<' -k1 | awk -v v="$2" -v n="$3" '
 BEGIN { FS="<nF>" }
@@ -613,9 +616,9 @@ BEGIN { FS="<nF>" }
 		sep = " "
 	}
 	if(n == "true")
-		head = dt" "$2"#"$3;
+		head = dt" "$2"."$3;
 	else
-		head = "\033[0;32m"dt" \033[0;36m"$2"#"$3"\033[0m";
+		head = "\033[0;32m"dt" \033[0;36m"$2"."$3"\033[0m";
 	print head""sep""msg;
 }'; return 0
 }
@@ -652,8 +655,9 @@ mr_log() {
 	[ $# -gt 1 ] && echo "Support only 1 file or dir." && return
 	[ $# -eq 1 ] && f=$1
 	[ -z "$f" ] && f='.'; debug "file=$f"
-	[ -f "$f" ] && mr_log_file "$f" $v $n "$fr" "$to" && return
 	[ -d "$f" ] && mr_log_dir "$f" $v $n "$fr" "$to" && return
+	arg2file "$f" #->mrFILE
+	[ -f "$mrFILE" ] && mr_log_file "$mrFILE" $v $n "$fr" "$to" && return
 	echo "$f doesn't exist."
 }
 #=== LIST ======================================================================
