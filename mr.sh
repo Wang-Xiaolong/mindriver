@@ -401,7 +401,7 @@ mr_add() {
 #=== VIEW ======================================================================
 usage_view() {
 	cat<<-EOF
-Usage: $(basename ${BASH_SOURCE[0]}) view [OPTION]... [LN]...
+Usage: $(basename ${BASH_SOURCE[0]}) view [OPTION]... [ROW]...
 Arguments:
   -f, --file=FILE
   -l, --linenum
@@ -432,8 +432,7 @@ mr_view() {
 			&& echo "$a is out of range." && return
 		get_log "$mr_file" $a
 		[ $? -ne 0 ] && return
-		local ts=$(get_ts)
-		local msg=$(get_msg)
+		local ts=$(get_ts) msg=$(get_msg)
 		date -d "@$ts" "+[%Y-%m-%d (ww%U.%w) %H:%M:%S]"
 		echo "$msg"
 	done
