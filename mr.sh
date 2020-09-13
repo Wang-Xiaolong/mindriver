@@ -409,16 +409,17 @@ Arguments:
 }
 
 mr_view() {
-	PARAMS=$(getopt -o f:l -l file:,linenum -n 'mr_view' -- "$@")
+	PARAMS=$(getopt -o f:mn -l file:,mono,number -n 'mr_view' -- "$@")
 	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
 	eval set -- "$PARAMS"; debug "mr_view($@)"
-	local mr_file=$MR_FILE; local pr_ln=false;
+	local mr_file=$MR_FILE mono=false num=false
 	while : ; do
 		case "$1" in
 		-f|--file) arg2file "$2"
 			[ -z "$mrFILE" ] && echo "$2 not found." && return
 			mr_file="$mrFILE"; shift 2;;
-		-l|--linenum) pr_ln=true; shift;;
+		-m|--mono) mono=true; shift;;
+		-n|--number) num=true; shift;;
 		--) shift; break;;
 		*) echo "Unknown option: $1"; return;;
 		esac
@@ -433,7 +434,9 @@ mr_view() {
 		get_log "$mr_file" $a
 		[ $? -ne 0 ] && return
 		local ts=$(get_ts) msg=$(get_msg)
-		date -d "@$ts" "+[%Y-%m-%d (ww%U.%w) %H:%M:%S]"
+		ts=$(date -d "@$ts" "+[%Y-%m-%d (ww%U.%w) %H:%M:%S]")
+		[ $mono == true ] && echo "$ts $a" \
+			|| echo -e "\033[0;32m$ts \033[0;36m$a\033[0m"
 		echo "$msg"
 	done
 }
