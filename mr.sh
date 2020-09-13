@@ -415,7 +415,9 @@ mr_view() {
 	local mr_file=$MR_FILE; local pr_ln=false;
 	while : ; do
 		case "$1" in
-		-f|--file) file=$2; shift 2;;
+		-f|--file) arg2file "$2"
+			[ -z "$mrFILE" ] && echo "$2 not found." && return
+			mr_file="$mrFILE"; shift 2;;
 		-l|--linenum) pr_ln=true; shift;;
 		--) shift; break;;
 		*) echo "Unknown option: $1"; return;;
