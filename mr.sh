@@ -423,14 +423,20 @@ mr_view() {
 		*) echo "Unknown option: $1"; return;;
 		esac
 	done
-	ln=$1
-
-	get_log "$mr_file" $ln
-	[ $? -ne 0 ] && return
-	local ts=$(get_ts)
-	local msg=$(get_msg)
-	date -d "@$ts" "+[%Y-%m-%d (ww%U.%w) %H:%M:%S]"
-	echo "$msg"
+	[ ! -f "$mr_file" ] && echo "No file ${mr_file#$PWD/}" && return
+	[ $# -eq 0 ] && echo "No row# specified." && return
+	lc=$(wc -l "$mr_file" | cut -d ' ' -f1)
+	for a in "$@"; do
+		[[ ! "$a" =~ ^[0-9]+$ ]] && echo "$a is not a number." && return
+		[ "$a" -gt "$lc" ] || [ "$a" -eq 0 ] \
+			&& echo "$a is out of range." && return
+		get_log "$mr_file" $a
+		[ $? -ne 0 ] && return
+		local ts=$(get_ts)
+		local msg=$(get_msg)
+		date -d "@$ts" "+[%Y-%m-%d (ww%U.%w) %H:%M:%S]"
+		echo "$msg"
+	done
 }
 #=== EDIT ======================================================================
 usage_edit() {
