@@ -435,9 +435,13 @@ mr_view() {
 		[ $? -ne 0 ] && return
 		local ts=$(get_ts) msg=$(get_msg)
 		ts=$(date -d "@$ts" "+[%Y-%m-%d (ww%U.%w) %H:%M:%S]")
-		[ $mono == true ] && echo "$ts $a" \
+		[ $mono = true ] && echo "$ts $a" \
 			|| echo -e "\033[0;32m$ts \033[0;36m$a\033[0m"
-		echo "$msg"
+		[ ! $num = true ] && echo "$msg" && continue
+		mlc=$(wc -l <<< "$msg"); debug "mlc=$mlc(len:${#mlc})"
+		[ $mono = true ] && e="%-${#mlc}s" \
+			|| e="\\033[0;33m%-${#mlc}s\\033[0m"
+		echo "$msg" | awk "{printf \"$e %s\\n\", NR, \$0}"
 	done
 }
 #=== EDIT ======================================================================
