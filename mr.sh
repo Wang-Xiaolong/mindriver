@@ -725,14 +725,13 @@ mr_list() {
 				let to=$fr+86400
 			fi; debug "from=$fr; to=$to"
 			shift 2;;
-		-s|--sort)
-			if [ "$2" = l ]; then
-				s="-n -k3.4"
-			elif [ "$2" = m ]; then
-				s="-n -k2.4"
-			else
-				echo "Unsupported sort $s."
-			fi
+		-s|--sort) case "$2" in
+			l) s='-n -k7.4';;
+			m) s='-n -k1';;
+			i) s='-n -k2.4';;
+			--) break;;
+			*) echo "Unknown sort letter: $2"; return;;
+			esac
 			shift 2;;
 		-r|--reverse) r='-r'; shift;;
 		-R|--recursive) R=true; shift;;
@@ -747,38 +746,58 @@ mr_list() {
 	eval $(grep 'MR_REPO_EXT=' "$mrREPO/.mrc")
 	[ -z "$MR_REPO_EXT" ] && echo "No MR_REPO_EXT set, exit." && return
 	local depth='-maxdepth 1'; [ $R = true ] && depth=''
-	local files=$(find "$d" $depth -name "*.$MR_REPO_EXT") lines=''
+	local files=$(find "$d" $depth -regex ".*[/.][0-9]+.$MR_REPO_EXT")
+	local lines=''
 	[[ $d != */ ]] && d="$d/"
 	while IFS= read -r f; do
 		[ -z "$f" ] && continue
 		[ ! -f "$f" ] && continue
-		local fn=${f#$d}; fn=${fn%.$MR_REPO_EXT}; debug "fn=$fn"
+		local fn=${f#$d}; fn=${fn%.$MR_REPO_EXT}
+		local dir=$(dirname "$fn"); fn=$(basename "$fn")
+		local id=$(echo "$fn" | grep -o '[0-9]\+$')
+		local as=$(echo "$fn" | sed 's/\.\{0,1\}[0-9]\+$//')
+		debug "dir=$dir fn=$fn id=$id as=$as"
 		local mt=$(date -r "$f" "+%s")
-		local latest=$(tail -1 $f)
-		[ -z "$latest" ] && lastest="$mt<nF>--FILE EMPTY--"
-		lines+="$fn<nF>$mt<nF>$latest"$'\n'
+		local tt=$(grep '<nF><FN>' $f | tail -1 \
+			| sed 's/.*<nF><FN>//')
+		[ -z "$tt" ] && tt=$(head -1 $f | sed 's/.*<nF>//')
+		debug "tt=$tt"
+		local last=$(tail -1 $f)
+		[ -z "$last" ] && last="$mt<nF>--FILE EMPTY--"
+		local lc=$(wc -l "$f" | cut -d " " -f1); debug "lc=$lc"
+		lines+="$mt<nF>$id<nF>$as<nF>$dir<nF>$tt<nF>$lc<nF>$last"$'\n'
 	done <<< "$files"; debug "lines=$lines"
 	echo "$lines" | sort -t '<' $s $r | awk -v v=$v -v n=$n '
 BEGIN { FS="<nF>" }
 /./ {
-	if (length(fr) != 0) { if ($3 < fr) next }
-	if (length(to) != 0) { if ($3 > to) next }
-	msg = $4
+	if (length(fr) != 0) { if ($7 < fr) next }
+	if (length(to) != 0) { if ($7 > to) next }
+	status = $8
+	if($3 == "")
+		idas = $2
+	else
+		idas = $2"."$3
+	dir = $4
+	title = $5
+	gsub(/<nL>.*/,"",title)
+	lc = $6
 	if(v == "true") {
-		dt = strftime("[%Y-%m-%d (ww%U.%w) %H:%M:%S]", $3)
-		gsub(/<nL>/,"\n",msg)
+		dt = strftime("[%Y-%m-%d (ww%U.%w) %H:%M:%S]", $7)
+		gsub(/<nL>/,"\n",status)
 		sep = "\n"
 	} else {
-		dt = strftime("%m/%d %H:%M", $3)
-		gsub(/<nL>.*/,"...",msg)
-		gsub(/<mt.*>/,"",msg)
+		dt = strftime("%m/%d %H:%M", $7)
+		gsub(/<nL>.*/,"...",status)
+		gsub(/<mt.*>/,"",status)
 		sep = " "
 	}
 	if(n == "true")
-		head = dt" "$1
-	else
-		head = "\033[0;32m"dt" \033[0;36m"$1"\033[0m"
-	print head""sep""msg
+		head = dt" "idas" "title" #"lc
+	else {
+		head = "\033[0;32m"dt" \033[0;35m"idas
+		head = head" \033[0;36m"title"\033[0;35m#"lc"\033[0m"
+	}
+	print head""sep""status
 }'
 }
 #=== MAIN ======================================================================
