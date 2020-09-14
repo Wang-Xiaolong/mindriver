@@ -699,11 +699,11 @@ OPTIONs:
 }
 
 mr_list() {
-	PARAMS=$(getopt -o nvd:s: -l mono,verbose,date:,sort: \
+	PARAMS=$(getopt -o nvd:s:R -l mono,verbose,date:,sort:,recursive \
 		-n 'mr_list' -- "$@")
 	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
 	eval set -- "$PARAMS"; debug "mr_list($@)"
-	local n=false v=false fr='' to='' d="." s="-k1"
+	local n=false v=false fr='' to='' d="." s="-k1" R=false
 	while : ; do
 		case "$1" in
 		-n|--mono) n=true; shift;;
@@ -733,6 +733,7 @@ mr_list() {
 				echo "Unsupported sort $s."
 			fi
 			shift 2;;
+		-R|--recursive) R=true; shift;;
 		--) shift; break;;
 		*) echo "Unknown option: $1"; return;;
 		esac
@@ -743,7 +744,8 @@ mr_list() {
 	get_repo "$d"; [ -z "$mrREPO" ] && echo "$d is not in a repo." && return
 	eval $(grep 'MR_REPO_EXT=' "$mrREPO/.mrc")
 	[ -z "$MR_REPO_EXT" ] && echo "No MR_REPO_EXT set, exit." && return
-	local files=$(find "$d" -name "*.$MR_REPO_EXT") lines=''
+	local depth='-maxdepth 1'; [ $R = true ] && depth=''
+	local files=$(find "$d" $depth -name "*.$MR_REPO_EXT") lines=''
 	[[ $d != */ ]] && d="$d/"
 	while IFS= read -r f; do
 		[ -z "$f" ] && continue
