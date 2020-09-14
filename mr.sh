@@ -699,11 +699,12 @@ OPTIONs:
 }
 
 mr_list() {
-	PARAMS=$(getopt -o nvd:s:R -l mono,verbose,date:,sort:,recursive \
+	PARAMS=$(getopt -o nvd:s:rR \
+		-l mono,verbose,date:,sort:,reverse,recursive \
 		-n 'mr_list' -- "$@")
 	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
 	eval set -- "$PARAMS"; debug "mr_list($@)"
-	local n=false v=false fr='' to='' d="." s="-k1" R=false
+	local n=false v=false fr='' to='' d="." s="-k1" r='' R=false
 	while : ; do
 		case "$1" in
 		-n|--mono) n=true; shift;;
@@ -733,6 +734,7 @@ mr_list() {
 				echo "Unsupported sort $s."
 			fi
 			shift 2;;
+		-r|--reverse) r='-r'; shift;;
 		-R|--recursive) R=true; shift;;
 		--) shift; break;;
 		*) echo "Unknown option: $1"; return;;
@@ -756,7 +758,7 @@ mr_list() {
 		[ -z "$latest" ] && lastest="$mt<nF>--FILE EMPTY--"
 		lines+="$fn<nF>$mt<nF>$latest"$'\n'
 	done <<< "$files"; debug "lines=$lines"
-	echo "$lines" | sort -t '<' $s | awk -v v=$v -v n=$n '
+	echo "$lines" | sort -t '<' $s $r | awk -v v=$v -v n=$n '
 BEGIN { FS="<nF>" }
 /./ {
 	if (length(fr) != 0) { if ($3 < fr) next }
