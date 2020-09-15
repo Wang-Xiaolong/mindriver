@@ -795,7 +795,7 @@ BEGIN { FS="<nF>" }
 		head = dt" "idas" "title" #"lc
 	else {
 		head = "\033[0;32m"dt" \033[0;35m"idas
-		head = head" \033[0;36m"title" \033[0;35m#"lc"\033[0m"
+		head = head" \033[0;36m"title" \033[0;33m#"lc"\033[0m"
 	}
 	print head""sep""status
 }'
