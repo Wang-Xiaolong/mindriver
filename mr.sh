@@ -777,7 +777,10 @@ BEGIN { FS="<nF>" }
 		idas = $2
 	else
 		idas = $2"."$3
-	dir = $4
+	if($4 == ".")
+		dir = ""
+	else
+		dir = $4"# "
 	title = $5
 	gsub(/<nL>.*/,"",title)
 	lc = $6
@@ -792,10 +795,10 @@ BEGIN { FS="<nF>" }
 		sep = " "
 	}
 	if(n == "true")
-		head = dt" "idas" "title" #"lc
+		head = dt" "idas" "dir""title" #"lc
 	else {
-		head = "\033[0;32m"dt" \033[0;35m"idas
-		head = head" \033[0;36m"title" \033[0;33m#"lc"\033[0m"
+		head = "\033[0;32m"dt" \033[0;35m"idas" \033[0;33m"dir
+		head = head"\033[0;36m"title" \033[0;33m#"lc"\033[0m"
 	}
 	print head""sep""status
 }'
