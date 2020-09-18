@@ -198,8 +198,22 @@ get_nomsg() { sed -e 's/\(^[0-9]\+<nF>\).*/\1/' <<< $mrLOG; }
 get_ts() { sed -e 's/\(^[0-9]\+\).*/\1/' <<< $mrLOG; }
 get_msg() { sed -e 's/^[0-9]\+<nF>//' -e 's/<nL>/\n/g' <<< $mrLOG; }
 mrMSG=''
-edit_msg() { # $1=old_msg
-	local type=''; [ -n "$MR_REPO_TEMP" ] && type=".$MR_REPO_TEMP"
+edit_msg() { # $1=old_msg $2=file_path
+	local type=$( head -n1 <<< "$1")
+	if [[ "$type" =~ ^[[:punct:]]*\<\..+\> ]]; then
+		type=$(sed 's/^[:punct:]*<\([a-z]*\)>.*$/\1/' <<< "$type")
+	else
+		type=''
+		if [ -n "$2" ]; then
+			get_repo "$2"
+			if [ -n "$mrREPO" ]; then
+				eval $(grep 'MR_REPO_TEMP=' "$mrREPO/.mrc")
+				if [ -n "$MR_REPO_TEMP" ]; then
+					type=".$MR_REPO_TEMP"
+				fi
+			fi
+		fi
+	fi
 	local tempf=$(mktemp -u -t mr.XXXXXXXX$type)
 	[ -n "$1" ] && echo "$1" > $tempf
 	vim $tempf
@@ -381,7 +395,7 @@ mr_add() {
 	fi
 
 	if [ -z "$message" ]; then
-		edit_msg #->mrMSG
+		edit_msg '' "$file" #->mrMSG
 		[ $? -ne 0 ] && return; debug "mrMSG=$mrMSG"
 		message=$mrMSG
 	fi
@@ -477,7 +491,7 @@ mr_edit() {
 	local msg=$(get_msg); debug "msg=$msg"
 
 	if [ -z "$exps" ]; then
-		edit_msg "$msg" #->mrMSG
+		edit_msg "$msg" "$mr_file" #->mrMSG
 		[ $? -ne 0 ] && return; debug "mrMSG=$mrMSG"
 	else
 		local exp=""
@@ -729,6 +743,7 @@ mr_list() {
 			l) s='-n -k7.4';;
 			m) s='-n -k1';;
 			i) s='-n -k2.4';;
+			d) s='-n -k 4.4,4 -k 2.4,2';;
 			--) break;;
 			*) echo "Unknown sort letter: $2"; return;;
 			esac
