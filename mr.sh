@@ -199,19 +199,14 @@ get_ts() { sed -e 's/\(^[0-9]\+\).*/\1/' <<< $mrLOG; }
 get_msg() { sed -e 's/^[0-9]\+<nF>//' -e 's/<nL>/\n/g' <<< $mrLOG; }
 mrMSG=''
 edit_msg() { # $1=old_msg $2=file_path
-	local type=$( head -n1 <<< "$1")
-	if [[ "$type" =~ ^[[:punct:]]*\<\..+\> ]]; then
-		type=$(sed 's/^[:punct:]*<\([a-z]*\)>.*$/\1/' <<< "$type")
-	else
-		type=''
-		if [ -n "$2" ]; then
-			get_repo "$2"
-			if [ -n "$mrREPO" ]; then
-				eval $(grep 'MR_REPO_TEMP=' "$mrREPO/.mrc")
-				if [ -n "$MR_REPO_TEMP" ]; then
-					type=".$MR_REPO_TEMP"
-				fi
-			fi
+	local ln1=$( head -n1 <<< "$1") type=''
+	if [[ "$ln1" =~ ^[[:punct:]]*\<.*\.[a-z]+\> ]]; then
+		type=$(sed 's/^[[:punct:]]*<.*\(\.[a-z]\+\)>.*$/\1/'<<<"$ln1")
+	elif [ -n "$2" ]; then
+		get_repo "$2"
+		if [ -n "$mrREPO" ]; then
+			eval $(grep 'MR_REPO_TEMP=' "$mrREPO/.mrc")
+			[ -n "$MR_REPO_TEMP" ] && type=".$MR_REPO_TEMP"
 		fi
 	fi
 	local tempf=$(mktemp -u -t mr.XXXXXXXX$type)
