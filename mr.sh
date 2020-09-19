@@ -228,7 +228,9 @@ append_msg() { # $1=msg, if omitted, use $mrMSG; based on mrLOG
 }
 update_log() { # $1=file $2=ln $3=log or mrLOG if omitted
 	local log; [ -n "$3" ] && log="$3" || log="$mrLOG"
-	sed -i -e "$2c $log" $1
+	sed -i "$2d" "$1"
+	echo "$log" >> "$1"
+	sort -o "$1" -n -t '<' -k1 "$1"
 }
 insert_log() { # $1=file  Insert mrLOG into the file
 	local ts=$(get_ts)
