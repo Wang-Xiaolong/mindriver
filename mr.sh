@@ -760,23 +760,25 @@ mr_list() {
 	local lines=''
 	[[ $d != */ ]] && d="$d/"
 	while IFS= read -r f; do
-		[ -z "$f" ] && continue
-		[ ! -f "$f" ] && continue
-		local fn=${f#$d}; fn=${fn%.$MR_REPO_EXT}
-		local dir=$(dirname "$fn"); fn=$(basename "$fn")
-		local id=$(echo "$fn" | grep -o '[0-9]\+$')
-		local as=$(echo "$fn" | sed 's/\.\{0,1\}[0-9]\+$//')
-		debug "dir=$dir fn=$fn id=$id as=$as"
+		debug "0.$(date +%s.%N)"
+		[ -z "$f" ] || [ ! -f "$f" ] && continue
+		local fn=${f#$d};
+		debug "0.1.$(date +%s.%N) fn=$fn"
+		fn=$(sed "s/^\(.*\/\)\{0,1\}\(\(.*\)\.\)\{0,1\}\([0-9]\+\)"\
+"\.$MR_REPO_EXT$/\4<nF>\3<nF>\1/" <<< "$fn")
+		debug "1.$(date +%s.%N) fn=$fn"
 		local mt=$(date -r "$f" "+%s")
 		local tt=$(grep '<nF><FN>' $f | tail -1 \
 			| sed 's/.*<nF><FN>//')
 		[ -z "$tt" ] && tt=$(head -1 $f | sed 's/.*<nF>//')
-		debug "tt=$tt"
+		debug "2.$(date +%s.%N) tt=$tt"
 		local last=$(tail -1 $f)
 		[ -z "$last" ] && last="$mt<nF>--FILE EMPTY--"
+		debug "3.$(date +%s.%N)"
 		local lc=$(wc -l "$f" | cut -d " " -f1); debug "lc=$lc"
-		lines+="$mt<nF>$id<nF>$as<nF>$dir<nF>$tt<nF>$lc<nF>$last"$'\n'
-	done <<< "$files"; debug "lines=$lines"
+		debug "4.$(date +%s.%N)"
+		lines+="$mt<nF>$fn<nF>$tt<nF>$lc<nF>$last"$'\n'
+	done <<< "$files"; # debug "lines=$lines"
 	echo "$lines" | sort -t '<' $s $r | awk -v v=$v -v n=$n '
 BEGIN { FS="<nF>" }
 /./ {
