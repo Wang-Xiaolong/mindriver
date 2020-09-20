@@ -770,17 +770,24 @@ mr_list() {
 "\.$MR_REPO_EXT$/\4<nF>\3<nF>\1/" <<< "$fn")
 		debug "1.$(date +%s.%N) fn=$fn"
 		local mt=$(date -r "$f" "+%s")
-		local tt=$(grep '<nF><FN>' $f | tail -1 \
-			| sed 's/.*<nF><FN>//')
-		[ -z "$tt" ] && tt=$(head -1 $f | sed 's/.*<nF>//')
-		debug "2.$(date +%s.%N) tt=$tt"
-		local last=$(tail -1 $f)
-		[ -z "$last" ] && last="$mt<nF>--FILE EMPTY--"
-		debug "3.$(date +%s.%N)"
-		local lc=$(wc -l "$f" | cut -d " " -f1); debug "lc=$lc"
+		lines+=$(awk -v mt=$mt -v fn=$fn '
+BEGIN { FS="<nF>" }
+/./ {
+	if (NR == 1) {
+		title = $2; last = $1"<nF>"; ln = 1
+	} else {
+		if ($2 ~ /\[FN\].*/) {
+			title = $2
+		} else {
+			last = $0; ln = NR
+		}
+	}
+}
+END { gsub(/^\[FN\]/, "", title)
+print mt"<nF>"fn"<nF>"title"<nF>"ln"<nF>"last }
+' "$f")$'\n'
 		debug "4.$(date +%s.%N)"
-		lines+="$mt<nF>$fn<nF>$tt<nF>$lc<nF>$last"$'\n'
-	done <<< "$files"; # debug "lines=$lines"
+	done <<< "$files"; debug "lines=$lines"
 	echo "$lines" | sort -t '<' $s $r | awk -v v=$v -v n=$n '
 BEGIN { FS="<nF>" }
 /./ {
