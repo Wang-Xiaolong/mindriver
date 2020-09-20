@@ -827,14 +827,14 @@ BEGIN { FS="<nF>" }
 	if (NR == 1) {
 		title = $2; last = $1"<nF>"; ln = 1
 	} else {
-		if ($2 ~ /\[FN\].*/) {
+		if ($2 ~ /<FN>.*/) {
 			title = $2
 		} else {
 			last = $0; ln = NR
 		}
 	}
 }
-END { gsub(/^\[FN\]/, "", title)
+END { gsub(/^<FN>/, "", title)
 print mt"<nF>"fn"<nF>"title"<nF>"ln"<nF>"last }
 ' "$f")$'\n'
 		debug "4.$(date +%s.%N)"
