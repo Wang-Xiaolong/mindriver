@@ -824,17 +824,17 @@ END {
 BEGIN { FS="<nF>" }
 /./ {
 	if (NR == 1) {
-		title = $2; last = $1"<nF>"; ln = 1
+		title = $2; ln = 1; lt = $1; lm = ""
 	} else {
 		if ($2 ~ /<FN>.*/) {
 			title = $2
 		} else {
-			last = $0; ln = NR
+			ln = NR; lt = $1; lm = $2
 		}
 	}
 }
 END { gsub(/^<FN>/, "", title)
-print mt"<nF>"fn"<nF>"title"<nF>"ln"<nF>"last }
+print mt"<nF>"lt"<nF>"fn"<nF>"ln"<nF>"title"<nF>"lm }
 ' "$f")$'\n'
 		debug "4.$(date +%s.%N)"
 	done <<< "$files"; debug "lines=$lines"
@@ -843,35 +843,35 @@ BEGIN { FS="<nF>" }
 /./ {
 	if (length(fr) != 0) { if ($7 < fr) next }
 	if (length(to) != 0) { if ($7 > to) next }
-	status = $8
-	if($3 == "")
-		idas = $2
+	lm = $8
+	if($4 == "")
+		idas = $3
 	else
-		idas = $2"."$3
-	if($4 == ".")
+		idas = $3":"$4
+	if($5 == "." || $5 == "")
 		dir = ""
 	else
-		dir = $4"# "
-	title = $5
+		dir = $5"# "
+	ln = $6
+	title = $7
 	gsub(/<nL>.*/,"",title)
-	lc = $6
 	if(v == "true") {
-		dt = strftime("[%Y-%m-%d (ww%U.%w) %H:%M:%S]", $7)
-		gsub(/<nL>/,"\n",status)
+		lt = strftime("[%Y-%m-%d (ww%U.%w) %H:%M:%S]", $2)
+		gsub(/<nL>/, "\n", lm)
 		sep = "\n"
 	} else {
-		dt = strftime("%m/%d %H:%M", $7)
-		gsub(/<nL>.*/,"...",status)
-		gsub(/<mt.*>/,"",status)
+		lt = strftime("%m/%d %H:%M", $2)
+		gsub(/<nL>.*/, "...", lm)
+		gsub(/<mt.*>/, "", lm)
 		sep = " "
 	}
 	if(n == "true")
-		head = dt" "idas" "dir""title" #"lc
+		head = lt" "idas" "dir""title" #"ln
 	else {
-		head = "\033[0;32m"dt" \033[0;35m"idas" \033[0;33m"dir
-		head = head"\033[0;36m"title" \033[0;33m#"lc"\033[0m"
+		head = "\033[0;32m"lt" \033[0;35m"idas" \033[0;33m"dir
+		head = head"\033[0;36m"title" \033[0;33m#"ln"\033[0m"
 	}
-	print head""sep""status
+	print head""sep""lm
 }'
 }
 #=== MAIN ======================================================================
