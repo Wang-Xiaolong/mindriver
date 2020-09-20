@@ -737,14 +737,13 @@ mr_list() {
 			fi; debug "from=$fr; to=$to"
 			shift 2;;
 		-s|--sort) case "$2" in
-			l) s='-n -k7.4';;
-			m) s='-n -k1';;
-			i) s='-n -k2.4';;
-			d) s='-n -k 4.4,4 -k 2.4,2';;
+			l|lt|last) s='-n -k7.4';;
+			m|mt|mtime) s='-n -k1,1';;
+			i|id) s='-n -k2.4';;
+			d|dir) s='-n -k 4.4,4 -k 2.4,2';;
 			--) break;;
-			*) echo "Unknown sort letter: $2"; return;;
-			esac
-			shift 2;;
+			*) echo "Unknown sort key word: $2"; return;;
+			esac; shift 2;;
 		-r|--reverse) r='-r'; shift;;
 		-R|--recursive) R=true; shift;;
 		--) shift; break;;
