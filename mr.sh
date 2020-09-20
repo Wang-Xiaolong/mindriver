@@ -715,7 +715,7 @@ mr_list() {
 		-n 'mr_list' -- "$@")
 	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
 	eval set -- "$PARAMS"; debug "mr_list($@)"
-	local n=false v=false fr='' to='' d="." s="-k1" r='' R=false
+	local n=false v=false fr='' to='' d="." s="" r='' R=false
 	while : ; do
 		case "$1" in
 		-n|--mono) n=true; shift;;
@@ -759,8 +759,59 @@ mr_list() {
 	[ -z "$MR_REPO_EXT" ] && echo "No MR_REPO_EXT set, exit." && return
 	local depth='-maxdepth 1'; [ $R = true ] && depth=''
 	local files=$(find "$d" $depth -regex ".*[/.][0-9]+.$MR_REPO_EXT")
-	local lines=''
 	[[ $d != */ ]] && d="$d/"
+	if [ -z "$s" ]; then # no sort, fast output
+		while IFS= read -r f; do
+			[ -z "$f" ] || [ ! -f "$f" ] && continue
+			local fn=${f#$d}
+			fn=$(sed "s/^\(.*\/\)\{0,1\}\(\(.*\)\.\)\{0,1\}"\
+"\([0-9]\+\)\.$MR_REPO_EXT$/-v id=\4 -v as=\3 -v dir=\1/" <<< "$fn")
+			awk -v v=$v -v n=$n $fn '
+BEGIN { FS="<nF>" }
+/./ {
+	if (NR == 1) {
+		title = $2; ln = 1; lt = $1; lm = ""
+	} else {
+		if ($2 ~ /<FN>.*/) {
+			title = $2
+		} else {
+			ln = NR; lt = $1; lm = $2
+		}
+	}
+}
+END {
+	if(as == "")
+		idas = id
+	else
+		idas = id"."as
+	if(dir == "." || dir == "")
+		dir = ""
+	else
+		dir = dir"# "
+	gsub(/<nL>.*/, "", title)
+	gsub(/^<FN>/, "", title)
+	if(v == "true") {
+		lt = strftime("[%Y-%m-%d (ww%U.%w) %H:%M:%S]", lt)
+		gsub(/<nL>/, "\n", lm)
+		sep = "\n"
+	} else {
+		lt = strftime("%m/%d %H:%M", lt)
+		gsub(/<nL>.*/, "...", lm)
+		gsub(/<mt.*>/, "", lm)
+		sep = " "
+	}
+	if(n == "true")
+		head = lt" "idas" "dir""title" #"lc
+	else {
+		head = "\033[0;32m"lt" \033[0;35m"idas" \033[0;33m"dir
+		head = head"\033[0;36m"title" \033[0;33m#"ln"\033[0m"
+	}
+	print head""sep""lm
+}' "$f"
+		done <<< "$files"
+		return
+	fi
+	local lines=''
 	while IFS= read -r f; do
 		debug "0.$(date +%s.%N)"
 		[ -z "$f" ] || [ ! -f "$f" ] && continue
