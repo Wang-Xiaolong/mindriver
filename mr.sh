@@ -737,7 +737,7 @@ mr_list() {
 			fi; debug "from=$fr; to=$to"
 			shift 2;;
 		-s|--sort) case "$2" in
-			l|lt|last) s='-n -k7.4';;
+			l|lt|last) s='-n -k2.4,2';;
 			m|mt|mtime) s='-n -k1,1';;
 			i|id) s='-n -k2.4';;
 			d|dir) s='-n -k 4.4,4 -k 2.4,2';;
