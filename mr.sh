@@ -739,7 +739,7 @@ mr_list() {
 		-s|--sort) case "$2" in
 			l|lt|last) s='-n -k2.4,2';;
 			m|mt|mtime) s='-n -k1,1';;
-			i|id) s='-n -k2.4';;
+			i|id) s='-n -k3.4,3';;
 			d|dir) s='-n -k 4.4,4 -k 2.4,2';;
 			--) break;;
 			*) echo "Unknown sort key word: $2"; return;;
