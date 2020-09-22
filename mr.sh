@@ -70,7 +70,7 @@ if [[ $_ != $0 ]]; then # script is being sourced
 		[[ "$id" =~ ^[0-9]+$ ]] && re=".*[./]$id.$MR_REPO_EXT" \
 			|| re=".*/$id\.[0-9]+\.$MR_REPO_EXT"
 		unset id MR_REPO_EXT
-		found=$(find "$repo" -regex "$re"); unset re repo
+		found=$(find -H "$repo" -regex "$re"); unset re repo
 		[ -z "$found" ] && echo "File not found." \
 			&& unset found && return
 		lc=$(wc -l <<< "$found")
@@ -294,7 +294,7 @@ arg2file() { # $1=arg, will set mrFILE, mrREPO and source mrREPO/.mrc
 	[ -z "$MR_REPO_EXT" ] && echo "No MR_REPO_EXT in the repo!" && return
 	[[ "$id" =~ ^[0-9]+$ ]] && re=".*[./]$id.$MR_REPO_EXT" \
 		|| re=".*/$id\.[0-9]+\.$MR_REPO_EXT"
-	local found=$(find "$mrREPO" -type f -regex "$re")
+	local found=$(find -H "$mrREPO" -type f -regex "$re")
 	[ -z "$found" ] && echo "File not found." && return
 	local lc=$(wc -l <<< "$found")
 	[ $lc -gt 1 ] && echo "Conflict! Multiple files found:" \
@@ -322,7 +322,7 @@ arg2file_plus() { # $1=id, will set mrFILE, mrREPO and source mrREPO/.mrc
 	source "$mrREPO/.mrc"
 	[ -z "$MR_REPO_EXT" ] && echo "No MR_REPO_EXT in the repo!" && return
 	if [ "$id" = + ]; then
-		local max=$(find "$mrREPO" -type f \
+		local max=$(find -H "$mrREPO" -type f \
 			-regex ".*[./][0-9]+\.$MR_REPO_EXT" \
 			-printf "%f\n" | grep -o "[0-9]\+\.$MR_REPO_EXT" \
 			| sed "s/.$MR_REPO_EXT//" | sort -n | tail -1)
@@ -333,7 +333,7 @@ arg2file_plus() { # $1=id, will set mrFILE, mrREPO and source mrREPO/.mrc
 	fi
 	[[ "$id" =~ ^[0-9]+$ ]] && re=".*[./]$id.$MR_REPO_EXT" \
 		|| re=".*/$id\.[0-9]+\.$MR_REPO_EXT"
-	local found=$(find "$mrREPO" -type f -regex "$re")
+	local found=$(find -H "$mrREPO" -type f -regex "$re")
 	if [ -z "$found" ]; then
 		if [[ "$id" =~ ^[0-9]+$ ]]; then
 			echo "ID $id not found."
@@ -631,7 +631,7 @@ mr_log_dir() { # $1=file $2=verbose $3=mono $4=from $5=to
 	[ -z "$mrREPO" ] && echo "$1 is not in a MindRiver repo." && return 0
 	eval $(grep 'MR_REPO_EXT=' "$mrREPO/.mrc")
 	[ -z "$MR_REPO_EXT" ] && echo "No MR_REPO_EXT set, exit." && return 0
-	local mr_files=$(find $1 -name "*.$MR_REPO_EXT")
+	local mr_files=$(find -H $1 -name "*.$MR_REPO_EXT")
 	mr_log_collect "$mr_files" "$1" "$4" "$5" ''
 	echo "$mrLOGS" | sort -n -t '<' -k1 | awk -v v="$2" -v n="$3" '
 BEGIN { FS="<nF>" }
@@ -757,7 +757,7 @@ mr_list() {
 	eval $(grep 'MR_REPO_EXT=' "$mrREPO/.mrc")
 	[ -z "$MR_REPO_EXT" ] && echo "No MR_REPO_EXT set, exit." && return
 	local depth='-maxdepth 1'; [ $R = true ] && depth=''
-	local files=$(find "$d" $depth -regex ".*[/.][0-9]+.$MR_REPO_EXT")
+	local files=$(find -H "$d" $depth -regex ".*[/.][0-9]+.$MR_REPO_EXT")
 	[[ $d != */ ]] && d="$d/"
 	if [ -z "$s" ]; then # no sort, fast output
 		while IFS= read -r f; do
