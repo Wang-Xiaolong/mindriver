@@ -597,12 +597,12 @@ BEGIN { FS="<nF>" }
 		dt = strftime("%m/%d %H:%M", $1);
 		gsub(/<nL>.*/,"...",msg);
 		gsub(/<mt.*>/,"",msg);
-		sep = "\t"
+		sep = " "
 	}
 	if(n == "true")
 		head = dt" "NR;
 	else
-		head = "\033[0;32m"dt" \033[0;36m"NR"\033[0m";
+		head = "\033[0;32m"dt" \033[0;33m"NR"\033[0m";
 	print head""sep""msg;
 }' "$1"; return 0
 }
@@ -650,7 +650,7 @@ BEGIN { FS="<nF>" }
 	if(n == "true")
 		head = dt" "$2"."$3;
 	else
-		head = "\033[0;32m"dt" \033[0;36m"$2"."$3"\033[0m";
+		head = "\033[0;32m"dt" \033[0;36m"$2" \033[0;33m"$3"\033[0m";
 	print head""sep""msg;
 }'; return 0
 }
