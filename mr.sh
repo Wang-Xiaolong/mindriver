@@ -22,9 +22,10 @@ if [[ $_ != $0 ]]; then # script is being sourced
 			done <<< "$mr_aliases"; unset mr_aliases
 		fi
 		export -n MR_SH MR_FILE
+		[ -n "$MR_PS1" ] && PS1="$MR_PS1" && unset MR_PS1
 		return
 	fi
-	mr_params=$(getopt -o c:f: -l command:,file: -n 'mr_src' -- "$@")
+	mr_params=$(getopt -o c:f:p -l command:,file:,ps1 -n 'mr_src' -- "$@")
 	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
 	eval set -- "$mr_params"
 	while : ; do
@@ -34,6 +35,8 @@ if [[ $_ != $0 ]]; then # script is being sourced
 			echo "Command alias '$2' was setup."
 			shift 2;;
 		-f|--file) file="$2"; shift 2;;
+		-p|--ps1) [ -z "$MR_PS1" ] && MR_PS1="$PS1"
+			PS1='$($MR_SH ps1)'; shift;;
 		--) shift; break;;
 		*) echo "Unknown option: $1"; unset mr_params mr_id; return;;
 		esac
@@ -109,7 +112,40 @@ Usage: . ${BASH_SOURCE[0]#$PWD/} clean
 This command should be "sourced".
 	EOF
 }
-
+#=== PS1 =======================================================================
+mrREPO=''
+get_repo() { # $1=path
+	local dir=$(realpath "$1")
+	while [ "$dir" != / ]; do
+		[ -f "$dir/.mrc" ] && mrREPO="$dir" && return
+		dir=$(dirname "$dir"); debug "dir=$dir"
+	done; mrREPO=''
+}
+mr_ps1() {
+	local repo='' path="$PWD" out=""
+	get_repo "$PWD"
+	if [ -n "$mrREPO" ]; then
+		path=$(realpath --relative-to="$mrREPO" "$PWD")
+		if [ "$path" = . ]; then
+			path=""
+			repo="$PWD"
+		elif [[ "$PWD" =~ ^.*$path$ ]]; then
+			repo=${PWD%$path}
+		else
+			repo="$mrREPO"
+		fi
+	fi
+	if [ -n "$repo" ]; then
+		[[ $repo =~ ^$HOME.* ]] && repo="~${repo#$HOME}"
+		out+="\033[0;35m$repo"
+	fi
+	if [ -n "$path" ]; then
+		[[ $path =~ ^$HOME.* ]] && path="~${path#$HOME}"
+		out+="\033[0;33m$path"
+	fi
+	out+="\033[0m $ "
+	printf "$out"
+}
 #=== INIT ======================================================================
 usage_init() {
 	cat<<-EOF
@@ -129,14 +165,6 @@ Basically a .mrc file with configurations specified in OPTIONs:
 		     'marktree' is the default option for a vim plug-in of mine:
 		     https://github.com/Wang-Xiaolong/vim-marktree
 	EOF
-}
-mrREPO=''
-get_repo() { # $1=path
-	local dir=$(realpath "$1")
-	while [ "$dir" != / ]; do
-		[ -f "$dir/.mrc" ] && mrREPO="$dir" && return
-		dir=$(dirname "$dir"); debug "dir=$dir"
-	done; mrREPO=''
 }
 set_conf() { # $1=fp $2=key $3=value
 	[ ! -f "$1" ] && echo "$2='$3'" >> "$1" && return
@@ -880,6 +908,7 @@ process_command() {
 
 	case "$1" in  #$1 is command
 	clean) [ $help_me != true ] && echo "Not sourced."; usage_clean;;
+	ps1) mr_ps1;;
 	init) shift; [ $help_me = true ] && usage_init || mr_init "$@";;
 	a|add) shift; [ $help_me = true ] && usage_add || mr_add "$@";;
 	v|view) shift; [ $help_me = true ] && usage_view || mr_view "$@";;
