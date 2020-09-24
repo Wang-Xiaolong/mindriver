@@ -122,7 +122,18 @@ get_repo() { # $1=path
 	done; mrREPO=''
 }
 mr_ps1() {
-	local repo='' path="$PWD" out=""
+	local repo='' path="$PWD" file="" frepo="" out=""
+	if [ -n "$MR_FILE" ] && [ -f "$MR_FILE" ]; then
+		get_repo "$MR_FILE"
+		if [ -n "$mrREPO" ]; then
+			source "$mrREPO/.mrc"
+			file=$(basename "$MR_FILE")
+			[ -n "$MR_REPO_EXT" ] && file=${file%.$MR_REPO_EXT}
+			frepo="$mrREPO"
+		else
+			file="$MR_FILE"
+		fi
+	fi
 	get_repo "$PWD"
 	if [ -n "$mrREPO" ]; then
 		path=$(realpath --relative-to="$mrREPO" "$PWD")
@@ -134,16 +145,27 @@ mr_ps1() {
 		else
 			repo="$mrREPO"
 		fi
+		[ "$frepo" = "$mrREPO" ] && frepo=''
 	fi
 	if [ -n "$repo" ]; then
 		[[ $repo =~ ^$HOME.* ]] && repo="~${repo#$HOME}"
-		out+="\033[0;35m$repo"
+		out+="\033[0;32m$repo"
 	fi
 	if [ -n "$path" ]; then
 		[[ $path =~ ^$HOME.* ]] && path="~${path#$HOME}"
 		out+="\033[0;33m$path"
 	fi
-	out+="\033[0m $ "
+	if [ -n "$file" ]; then
+		[[ $file =~ ^$HOME.* ]] && file="~${file#$HOME}"
+		out="\033[0;35m$file $out"
+		if [ -n "$frepo" ]; then
+			local rfrepo=$(realpath --relative-to="$PWD" "$frepo")
+			[[ $frepo =~ ^$HOME.* ]] && frepo="~${frepo#$HOME}"
+			[ ${#rfrepo} -lt ${#frepo} ] && frepo="$rfrepo"
+			out="\033[0;31m$frepo:$out"
+		fi
+	fi
+	out+="\033[0m\n$ "
 	printf "$out"
 }
 #=== INIT ======================================================================
