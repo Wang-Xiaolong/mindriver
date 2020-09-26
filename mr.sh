@@ -634,7 +634,7 @@ OPTIONs:
 mr_log_file() { # $1=file $2=verbose $3=mono $4=from $5=to
 	awk -v v="$2" -v n="$3" -v fr="$4" -v to="$5" '
 BEGIN { FS="<nF>" }
-{
+/./ {
 	if (length(fr) != 0) { if ($1 < fr) next }
 	if (length(to) != 0) { if ($1 > to) next }
 	msg = $2
@@ -665,7 +665,7 @@ mr_log_collect() { # $1=files #2=dir $3=from $4=to $5=kw
 		local fn=${mr_file#$dir}; fn=${fn%.$MR_REPO_EXT}; debug "fn=$fn"
 		local rs=$(awk -v fn="$fn" -v fr="$3" -v to="$4" '
 BEGIN { FS="<nF>" }
-{
+/./ {
 	if (length(fr) != 0) { if ($1 < fr) next }
 	if (length(to) != 0) { if ($1 > to) next }
 	print $1"<nF>"fn"<nF>"NR"<nF>"$2
@@ -684,7 +684,7 @@ mr_log_dir() { # $1=file $2=verbose $3=mono $4=from $5=to
 	mr_log_collect "$mr_files" "$1" "$4" "$5" ''
 	echo "$mrLOGS" | sort -n -t '<' -k1 | awk -v v="$2" -v n="$3" '
 BEGIN { FS="<nF>" }
-{
+/./ {
 	msg = $4
 	if(v == "true") {
 		dt = strftime("[%Y-%m-%d (ww%U.%w) %H:%M:%S]", $1)
