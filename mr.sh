@@ -549,7 +549,7 @@ mr_edit() {
 		[ $? -ne 0 ] && return
 		echo "The result log would be:"; echo "$mrMSG"
 		read -p "OK(y/n)? " -n 1 -r
-		[[ ! $REPLY =~ ^[Yy]$ ]] && return
+		[[ ! $REPLY =~ ^[Yy]$ ]] && echo && return; echo
 	fi
 	mrLOG=$(set_msg); debug "mrLOG=$mrLOG"
 	update_log "$mr_file" $ln
