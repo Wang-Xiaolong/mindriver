@@ -361,7 +361,7 @@ arg2file_plus() { # $1=id, will set mrFILE, mrREPO and source mrREPO/.mrc
 	if [ ${#MR_ID[@]} -eq 1 ]; then
 		id="${MR_ID[0]}" dir=.
 	elif [ ${#MR_ID[@]} -eq 2 ]; then
-		id="${MR_ID[1]}" dir="${MR_ID[0]}"
+		id="${MR_ID[1]}" dir="${MR_ID[0]%/}"
 	else
 		echo "Bad num of ':'s(${#MR_ID[@]}) in id!"; return
 	fi; unset MR_ID; debug "id=$id dir=$dir"
