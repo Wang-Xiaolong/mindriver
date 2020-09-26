@@ -609,7 +609,7 @@ mr_move() {
 		sep="; "
 	done; debug "p_sed=$p_sed"
 	read -p "OK(y/n)? " -n 1 -r
-	[[ ! $REPLY =~ ^[Yy]$ ]] && return
+	[[ ! $REPLY =~ ^[Yy]$ ]] && echo && return; echo
 	sed -n "$p_sed" "$mr_file" >> "$dest"
 	sort -o "$dest" -n -t '<' -k1 "$dest"
 	sed -i "$d_sed" "$mr_file"
