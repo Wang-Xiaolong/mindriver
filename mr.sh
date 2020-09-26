@@ -219,9 +219,9 @@ mr_init() {
 		cat "$mrREPO/.mrc"
 		[ -z "$name$owner$email$ext$temp" ] && return
 		read -p "Configure the repo with your values(y/n)? " -n 1 -r
-		[[ ! $REPLY =~ ^[Yy]$ ]] && return
+		[[ ! $REPLY =~ ^[Yy]$ ]] && echo && return; echo
 		conf="$mrREPO/.mrc"
-		echo; echo "Updating configuration:"
+		echo "Updating configuration:"
 	else # create new repo
 		conf="$dir/.mrc"
 		[ -z "$ext" ] && ext=mr
@@ -388,8 +388,7 @@ arg2file_plus() { # $1=id, will set mrFILE, mrREPO and source mrREPO/.mrc
 		if [[ "$id" =~ ^[0-9]+$ ]]; then
 			echo "ID $id not found."
 			read -p "Create a new file with it(y/n)? " -n 1 -r
-			echo
-			[[ ! $REPLY =~ ^[Yy]$ ]] && return
+			[[ ! $REPLY =~ ^[Yy]$ ]] && echo && return; echo
 			mrFILE="$dir/$id.$MR_REPO_EXT"
 		else
 			echo "Alias '$id' not found."
