@@ -272,6 +272,9 @@ set_msg() { # $1=msg, if omitted, use $mrMSG; based on mrLOG
 	local nomsg=$(get_nomsg)
 	echo "$nomsg${msg//$'\n'/<nL>}"
 }
+set_date() { # $1=date
+	sed "s/^[0-9]*/$1/" <<< "$mrLOG"
+}
 append_msg() { # $1=msg, if omitted, use $mrMSG; based on mrLOG
 	local msg; [ -n "$1" ] && msg="$1" || msg="$mrMSG"
 	echo "$mrLOG<nL>${msg//$'\n'/<nL>}"
@@ -518,15 +521,18 @@ Edit a message in a thread, specialized by the MSG_ID.
 }
 
 mr_edit() {
-	PARAMS=$(getopt -o f: -l file: -n 'mr_edit' -- "$@")
+	PARAMS=$(getopt -o f:d: -l file:date: -n 'mr_edit' -- "$@")
 	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
 	eval set -- "$PARAMS"; debug "mr_edit($@)"
-	local mr_file=$MR_FILE
+	local mr_file=$MR_FILE date=''
 	while : ; do
 		case "$1" in
 		-f|--file) arg2file "$2"
 			[ -z "$mrFILE" ] && echo "$2 not found." && return
 			mr_file="$mrFILE"; shift 2;;
+		-d|--date) date="$2"; shift 2; debug "date=$date"
+			date=$(date -d "$date" '+%s')
+			[ $? -ne 0 ] && return;;
 		--) shift; break;;
 		*) echo "Unknown option: $1"; return;;
 		esac
@@ -540,10 +546,7 @@ mr_edit() {
 	[ $? -ne 0 ] && return; debug "mrLOG=$mrLOG"
 	local msg=$(get_msg); debug "msg=$msg"
 
-	if [ -z "$exps" ]; then
-		edit_msg "$msg" "$mr_file" #->mrMSG
-		[ $? -ne 0 ] && return; debug "mrMSG=$mrMSG"
-	else
+	if [ -n "$exps" ]; then
 		local exp=""
 		for arg in "$@"; do
 			exp="$exp"$'\n'"$arg"
@@ -553,8 +556,13 @@ mr_edit() {
 		echo "The result log would be:"; echo "$mrMSG"
 		read -p "OK(y/n)? " -n 1 -r
 		[[ ! $REPLY =~ ^[Yy]$ ]] && echo && return; echo
+		mrLOG=$(set_msg); debug "mrLOG=$mrLOG"
+	elif [ -z "$date" ]; then
+		edit_msg "$msg" "$mr_file" #->mrMSG
+		[ $? -ne 0 ] && return; debug "mrMSG=$mrMSG"
+		mrLOG=$(set_msg); debug "mrLOG=$mrLOG"
 	fi
-	mrLOG=$(set_msg); debug "mrLOG=$mrLOG"
+	[ -n "$date" ] && mrLOG=$(set_date $date)
 	update_log "$mr_file" $ln
 }
 #=== MOVE ======================================================================
