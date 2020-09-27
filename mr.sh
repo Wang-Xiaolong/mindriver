@@ -348,7 +348,7 @@ arg2file() { # $1=arg, will set mrFILE, mrREPO and source mrREPO/.mrc
 	[[ "$id" =~ ^[0-9]+$ ]] && re=".*[./]$id.$MR_REPO_EXT" \
 		|| re=".*/$id\.[0-9]+\.$MR_REPO_EXT"
 	local found=$(find -H "$mrREPO" -type f -regex "$re")
-	[ -z "$found" ] && echo "File not found." && return
+	[ -z "$found" ] && debug "File not found." && return
 	local lc=$(wc -l <<< "$found")
 	[ $lc -gt 1 ] && echo "Conflict! Multiple files found:" \
 		&& echo "$found" && return
@@ -463,6 +463,57 @@ mr_add() {
 		[ $? -ne 0 ] && return
 		mrLOG=$(append_msg "$message")
 		update_log "$file" $append
+	fi
+}
+#=== ALIAS =====================================================================
+usage_alias() {
+	cat<<-EOF
+Usage: $(basename ${BASH_SOURCE[0]}) alias [-d] [FILE] [ALIAS]
+Set the alias for a specified file.
+  -d, --delete  Delete the alias.
+	EOF
+}
+set_alias() { # $1=file $2=alias
+	arg2file "$1"
+	[ -z "$mrFILE" ] && echo "$1 not found." && return
+	local dir=$(dirname $mrFILE) base=$(basename $mrFILE) file="$mrFILE"
+	if [ -n "$2" ]; then
+		arg2file "$2"
+		[ -n "$mrFILE" ] && echo "Alias $2 already used by $mrFILE"\
+			&& return
+		base=$(sed "s/\(.*\.\)\{0,1\}\([0-9]\+\.[0-9a-zA-Z]\+\)"\
+"/$2\.\2/" <<< "$base")
+	else
+		base=$(sed "s/\(.*\.\)\{0,1\}\([0-9]\+\.[0-9a-zA-z]\+\)/\2/"\
+			<<< "$base")
+	fi
+	[ "$file" != "$dir/$base" ] && mv "$file" "$dir/$base"\
+		&& echo "$file->$base"
+}
+mr_alias() {
+        PARAMS=$(getopt -o d -l delete -n 'mr_alias' -- "$@")
+        [ $? -ne 0 ] && echo "Failed parsing the arguments." && return
+        eval set -- "$PARAMS"; debug "mr_alias($@)"
+	local delete=false
+        while : ; do
+                case "$1" in
+                -d|--delete) delete=true; shift;;
+                --) shift; break;;
+                *) echo "Unknown option: $1"; return;;
+                esac
+        done
+        if [ $# -eq 0 ]; then # no arg, print all alias files
+		echo "todo"
+	elif [ $# -eq 1 ]; then # $1=file, print it's alias, or delete if -d
+		if [ $delete = true ]; then
+			set_alias "$1"
+		else
+			echo "todo"
+		fi
+	elif [ $# -eq 2 ]; then # $1=file $2=alias, set alias
+		set_alias "$1" "$2"
+	else
+		echo "Too many arguments for alias command."
 	fi
 }
 #=== VIEW ======================================================================
@@ -944,6 +995,7 @@ process_command() {
 	ps1) mr_ps1;;
 	init) shift; [ $help_me = true ] && usage_init || mr_init "$@";;
 	a|add) shift; [ $help_me = true ] && usage_add || mr_add "$@";;
+	alias) shift; [ $help_me = true ] && usage_alias || mr_alias "$@";;
 	v|view) shift; [ $help_me = true ] && usage_view || mr_view "$@";;
 	e|ed|edit) shift; [ $help_me = true ] && usage_edit || mr_edit "$@";;
 	m|mv|move) shift; [ $help_me = true ] && usage_move || mr_move "$@";;
