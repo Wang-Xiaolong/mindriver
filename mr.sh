@@ -402,16 +402,19 @@ arg2file_plus() { # $1=id, will set mrFILE, mrREPO and source mrREPO/.mrc
 }
 
 mr_add() {
-	PARAMS=$(getopt -o a:f: -l append:,file: -n 'mr_add' -- "$@")
+	PARAMS=$(getopt -o a:f:d: -l append:,file:,date: -n 'mr_add' -- "$@")
 	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
 	eval set -- "$PARAMS"; debug "mr_add($@)"
-	local append='' f='' dir='.'
+	local append='' f='' date=''
 	while : ; do
 		case "$1" in
 		-a|--append) append="$2"; shift 2; debug "append=$append"
 			[[ ! $append =~ $NUMRE ]] && echo \
 				"$append is not a number." && return;;
 		-f|--file) f="$2"; shift 2; debug "f(ile)=$f";;
+		-d|--date) date="$2"; shift 2; debug "date=$date"
+			date=$(date -d "$date" '+%s')
+			[ $? -ne 0 ] && return;;
 		--) shift; break;;
 		*) echo "Unknown option: $1"; return;;
 		esac
@@ -448,9 +451,10 @@ mr_add() {
 	if [ -z $(echo $message | tr -d '[:space:]') ]; then # empty?
 		echo "Empty message, cancel."
 	elif [ -z "$append" ]; then
-		datestr=$(date '+%s')
+		[ -z "$date" ] && date=$(date '+%s')
 		[ ! -f "$file" ] && echo "$file will be created."
-		echo "$datestr<nF>${message//$'\n'/<nL>}" >> $file
+		echo "$date<nF>${message//$'\n'/<nL>}" >> $file
+		sort -o "$file" -n -t '<' -k1 "$file"
 	else #append
 		get_log "$file" $append
 		[ $? -ne 0 ] && return
