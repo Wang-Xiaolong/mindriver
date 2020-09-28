@@ -1002,7 +1002,6 @@ process_command() {
 	l|log) shift; [ $help_me = true ] && usage_log || mr_log "$@";;
 	ls|list) shift; [ $help_me = true ] && usage_list || mr_list "$@";;
 	help) usage;;
-	version) echo "0.03 2020-06-15 paulo.dx@gmail.com";;
 	*) echo "Incorrect command: $1"; usage;;
 	esac
 	return 0
