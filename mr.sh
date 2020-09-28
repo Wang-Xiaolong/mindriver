@@ -1011,8 +1011,7 @@ process_command() {
 [ $# -eq 0 ] && echo "Current File: $MR_FILE" && exit
 
 # process help & debug before other options
-args=() # empty array
-help_me=false; debug=false
+args=() help_me=false debug=false
 for arg in "$@"; do
 	case "$arg" in
 	'-?'|-h|--help) help_me=true;; # ? is a wildcard if not br by ''
