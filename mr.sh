@@ -1002,7 +1002,9 @@ process_command() {
 	l|log) shift; [ $help_me = true ] && usage_log || mr_log "$@";;
 	ls|list) shift; [ $help_me = true ] && usage_list || mr_list "$@";;
 	help) usage;;
-	*) echo "Incorrect command: $1"; usage;;
+	*) local dir=$(dirname ${BASH_SOURCE[0]}) cmd=$1; shift
+		[ -f "$dir/mr.$cmd.sh" ] && . "$dir/mr.$cmd.sh" "$@" \
+			|| (echo "Incorrect command: $cmd" && usage);;
 	esac
 	return 0
 }
