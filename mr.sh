@@ -703,6 +703,7 @@ BEGIN { FS="<nF>" }
 	msg = $2
 	if(v == "true") {
 		dt = strftime("[%Y-%m-%d (ww%U.%w) %H:%M:%S]", $1)
+		gsub(/<ED><nL>.*/, "...", msg);
 		gsub(/<nL>/,"\n",msg);
 		sep = "\n";
 	} else {
@@ -751,6 +752,7 @@ BEGIN { FS="<nF>" }
 	msg = $4
 	if(v == "true") {
 		dt = strftime("[%Y-%m-%d (ww%U.%w) %H:%M:%S]", $1)
+		gsub(/<ED><nL>.*/, "...", msg)
 		gsub(/<nL>/,"\n",msg);
 		sep = "\n";
 	} else {
@@ -903,6 +905,7 @@ END {
 	gsub(/^<FN>/, "", title)
 	if(v == "true") {
 		lt = strftime("[%Y-%m-%d (ww%U.%w) %H:%M:%S]", lt)
+		gsub(/<ED><nL>.*/, "...", lm)
 		gsub(/<nL>/, "\n", lm)
 		sep = "\n"
 	} else {
@@ -969,6 +972,7 @@ BEGIN { FS="<nF>" }
 	gsub(/<nL>.*/,"",title)
 	if(v == "true") {
 		lt = strftime("[%Y-%m-%d (ww%U.%w) %H:%M:%S]", $2)
+		gsub(/<ED><nL>.*/, "...", lm)
 		gsub(/<nL>/, "\n", lm)
 		sep = "\n"
 	} else {
