@@ -121,8 +121,14 @@ get_repo() { # $1=path
 		dir=$(dirname "$dir"); debug "dir=$dir"
 	done; mrREPO=''
 }
+home_path() { [[ $1 =~ ^$HOME.* ]] && echo "~${1#$HOME}" || echo "$1"; }
+norm_path() { # $1=path
+	local abs=$(home_path $(realpath "$1"))
+	local rel=$(realpath --relative-to="$PWD" "$1")
+	[ ${#rel} -lt ${#abs} ] && echo "$rel" || echo "$abs"
+}
 mr_ps1() {
-	local repo='' path="$PWD" file="" frepo="" out=""
+	local repo='' path="$(home_path $PWD)" file="" frepo="" out=""
 	if [ -n "$MR_FILE" ] && [ -f "$MR_FILE" ]; then
 		get_repo "$MR_FILE"
 		if [ -n "$mrREPO" ]; then
@@ -131,15 +137,14 @@ mr_ps1() {
 			[ -n "$MR_REPO_EXT" ] && file=${file%.$MR_REPO_EXT}
 			frepo="$mrREPO"
 		else
-			file="$MR_FILE"
+			file=$(norm_path "$MR_FILE")
 		fi
 	fi
 	get_repo "$PWD"
 	if [ -n "$mrREPO" ]; then
 		path=$(realpath --relative-to="$mrREPO" "$PWD")
 		if [ "$path" = . ]; then
-			path=""
-			repo="$PWD"
+			path='' repo="$PWD"
 		elif [[ "$PWD" =~ ^.*$path$ ]]; then
 			repo=${PWD%$path}
 		else
@@ -147,23 +152,11 @@ mr_ps1() {
 		fi
 		[ "$frepo" = "$mrREPO" ] && frepo=''
 	fi
-	if [ -n "$repo" ]; then
-		[[ $repo =~ ^$HOME.* ]] && repo="~${repo#$HOME}"
-		out+="\033[0;32m$repo"
-	fi
-	if [ -n "$path" ]; then
-		[[ $path =~ ^$HOME.* ]] && path="~${path#$HOME}"
-		out+="\033[0;33m$path"
-	fi
+	[ -n "$repo" ] && out+="\033[0;32m$(home_path $repo)"
+	[ -n "$path" ] && out+="\033[0;33m$path"
 	if [ -n "$file" ]; then
-		[[ $file =~ ^$HOME.* ]] && file="~${file#$HOME}"
 		out="\033[0;35m$file $out"
-		if [ -n "$frepo" ]; then
-			local rfrepo=$(realpath --relative-to="$PWD" "$frepo")
-			[[ $frepo =~ ^$HOME.* ]] && frepo="~${frepo#$HOME}"
-			[ ${#rfrepo} -lt ${#frepo} ] && frepo="$rfrepo"
-			out="\033[0;31m$frepo:$out"
-		fi
+		[ -n "$frepo" ] && out="\033[0;31m$(norm_path $frepo):$out"
 	fi
 	out+="\033[0m\n$ "
 	printf "$out"
@@ -1017,7 +1010,7 @@ process_command() {
 	return 0
 }
 
-[ $# -eq 0 ] && echo "Current File: $MR_FILE" && exit
+[ $# -eq 0 ] && echo "Current File: $(norm_path $MR_FILE)" && exit
 
 # process help & debug before other options
 args=() help_me=false debug=false
