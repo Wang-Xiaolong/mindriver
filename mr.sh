@@ -435,7 +435,7 @@ mr_add() {
 
 	local file=''
 	if [ -n "$f" ]; then
-		arg2file_plus "$f"; debug "mrFILE=$mrFILE"
+		a2f "$f"; [ $? -eq 2 ] && return
 		file="$mrFILE"
 	else
 		[ ! -f "$MR_FILE" ] && echo "No $MR_FILE!" && return
@@ -445,14 +445,15 @@ mr_add() {
 
 	if [ -n "$append" ]; then
 		if [ ! -f "$file" ]; then
-			echo "No line#$append for no file."
-			return
+			echo "No line#$append for no file."; return
 		fi
 		lc=$(wc -l "$file" | cut -d " " -f1); debug "lc=$lc"
 		if (( $append > $lc )) || (( $append < 1 )); then
-			echo "No line#$append."
-			return
+			echo "No line#$append."; return
 		fi
+	elif [ ! -f "$file" ]; then
+		read -p "$file will be created, OK(y/n)? " -n 1 -r
+		[[ ! $REPLY =~ ^[Yy]$ ]] && echo && return; echo
 	fi
 
 	if [ -z "$message" ]; then
@@ -464,7 +465,6 @@ mr_add() {
 		echo "Empty message, cancel."
 	elif [ -z "$append" ]; then
 		[ -z "$date" ] && date=$(date '+%s')
-		[ ! -f "$file" ] && echo "$file will be created."
 		echo "$date<nF>${message//$'\n'/<nL>}" >> $file
 		sort -o "$file" -n -t '<' -k1 "$file"
 	else #append
