@@ -1,6 +1,69 @@
 #!/usr/bin/env bash
+[[ $_ != $0 ]] && mr_sourced=true # script is being sourced
+#=== Functions for Sourced Mode ================================================
+# only "$@" can trans args properly, $@/$*/"$*" can't.
+debug() { [ "$debug" = true ] && >&2 echo "$@"; }
+home_path() { [[ $1 =~ ^$HOME.* ]] && echo "~${1#$HOME}" || echo "$1"; }
+norm_path() { # $1=path
+	local abs=$(home_path $(realpath "$1"))
+	local rel=$(realpath --relative-to="$PWD" "$1")
+	[ ${#rel} -lt ${#abs} ] && echo "$rel" || echo "$abs"
+}
+mrREPO=''
+get_repo() { # $1=path
+	local dir=$(realpath "$1")
+	while [ "$dir" != / ]; do
+		[ -f "$dir/.mrc" ] && mrREPO="$dir" && return
+		dir=$(dirname "$dir"); debug "dir=$dir"
+	done; mrREPO=''
+}
+mrFILE=''
+a2f() { # arg->file, $1=path|id|alias, return to mrFILE: 0=found 1=new 2=fail
+	mrFILE=''
+	[ -z "$1" ] && return 2
+	[ -f "$1" ] && mrFILE="$1" && return 0
+	local dir; [ -d "$1" ] && dir="$1" || dir=$(dirname "$1")
+	debug "dir=$dir"
+	[ ! -d "$dir" ] && echo "$dir is not a valid directory." && return 2
+	get_repo "$dir"; debug "mrREPO=$mrREPO"
+	[ -z "$mrREPO" ] && echo "$dir is not in a repository." && return 2
+	eval $(grep 'MR_REPO_EXT=' "$mrREPO/.mrc");
+	debug "MR_REPO_EXT=$MR_REPO_EXT"
+	[ -z "$MR_REPO_EXT" ] && echo "No MR_REPO_EXT set, exit." && return 2
+	if [ -d "$1" ]; then
+		mrFILE="$1/.$MR_REPO_EXT"; debug "$1->$1/.$MR_REPO_EXT"
+		[ -f "$1/.$MR_REPO_EXT" ] && return 0 || return 1
+	fi
+	[ -f "$1.$MR_REPO_EXT" ] && mrFILE="$1.$MR_REPO_EXT" && return 0
+	local base=$(basename "$1"); debug "base=$base"
+	if [ "$base" = + ]; then
+		local max=$(find -H "$mrREPO" -type f \
+			-regex ".*[./][0-9]+\.$MR_REPO_EXT" \
+			-printf "%f\n" | grep -o "[0-9]\+\.$MR_REPO_EXT" \
+			| sed "s/.$MR_REPO_EXT//" | sort -n | tail -1)
+		debug "max=$max"
+		[ -z "$max" ] && base=1 || base=$(( $max + 1 ))
+		mrFILE="$dir/$base.$MR_REPO_EXT"; return 1
+	fi
+	[[ "$base" =~ ^[0-9]+$ ]] && local re=".*[./]$base.$MR_REPO_EXT" \
+		|| local re=".*/$base\.[0-9]+\.$MR_REPO_EXT"; debug "re=$re"
+	local found=$(find -H "$mrREPO" -type f -regex "$re")
+	debug "found=$found"
+	if [ -z "$found" ]; then
+		if [[ "$base" =~ ^[0-9]+$ ]]; then
+			mrFILE="$dir/$base.$MR_REPO_EXT"; return 1
+		else
+			echo "No alias '$base'."; return 2
+		fi
+	fi
+	local lc=$(wc -l <<< "$found"); debug "lc=$lc"
+	[ $lc -gt 1 ] && echo "Conflict! Multiple files found:" \
+		&& echo "$found" && return 2
+	mrFILE="$found"; return 0
+}
 #=== Sourced: NONE and CLEAN ===================================================
-if [[ $_ != $0 ]]; then # script is being sourced
+if [ "$mr_sourced" = true ]; then
+	unset mr_sourced
 	if [ $# -eq 0 ]; then
 		echo "Command alias:"
 		alias | grep $(basename ${BASH_SOURCE[0]})
@@ -43,45 +106,9 @@ if [[ $_ != $0 ]]; then # script is being sourced
 	done; unset mr_params
 	[ -z "$MR_SH" ] && echo "Error: No -c CMD, no command to use."
 	[ -z "$file" ] && return
-	if [ -f "$file" ]; then
-		export MR_FILE="$file"; unset file
-	else
-		id=$file; unset file
-		IFS=':' read -ra MR_ID <<< "$id"
-		if [ ${#MR_ID[@]} -eq 1 ]; then
-			id="${MR_ID[0]}" dir=.
-		elif [ ${#MR_ID[@]} -eq 2 ]; then
-			id="${MR_ID[1]}" dir="${MR_ID[0]}"
-		else
-			echo "Bad num of ':'s(${#MR_ID[@]}) in id!"
-			unset MR_ID id; return
-		fi; unset MR_ID
-		[ -z "$id" ] && echo "Empty id!" \
-			&& unset id dir && return
-		[ ! -d "$dir" ] && echo "No directory $dir!" \
-			&& unset id dir && return
-		repo='' d=$(realpath "$dir")
-		while [ "$d" != / ]; do
-			[ -f "$d/.mrc" ] && repo="$d" && break
-			d=$(dirname "$d")
-		done; unset d
-		[ -z "$repo" ] && echo "$dir is not in a repo" \
-			&& unset id dir repo && return; unset dir
-		eval $(grep 'MR_REPO_EXT=' "$repo/.mrc")
-		[ -z "$MR_REPO_EXT" ] && echo "No MR_REPO_EXT set!" \
-			&& unset id repo && return
-		[[ "$id" =~ ^[0-9]+$ ]] && re=".*[./]$id.$MR_REPO_EXT" \
-			|| re=".*/$id\.[0-9]+\.$MR_REPO_EXT"
-		unset id MR_REPO_EXT
-		found=$(find -H "$repo" -regex "$re"); unset re repo
-		[ -z "$found" ] && echo "File not found." \
-			&& unset found && return
-		lc=$(wc -l <<< "$found")
-		[ $lc -gt 1 ] && echo "Conflict! Multiple files found:" \
-			&& echo "$found" && unset found lc && return; unset lc
-		export MR_FILE="$found"; unset found
-	fi
-	echo "Current file: ${MR_FILE#$PWD/}"
+	a2f "$file"; [ $? -ne 0 ] && return
+	export MR_FILE=$(realpath $mrFILE); unset file
+	echo "Current file: $(norm_path $MR_FILE)"
 	return
 fi
 #=== PUBLIC FUNCTIONS ==========================================================
@@ -101,8 +128,6 @@ You can run 'mr <command> <-h|--help|-?>' to get the document of each command.
 	EOF
 }
 
-debug() { [ $debug = true ] && >&2 echo "$@"; }
-# only "$@" can trans args properly, $@/$*/"$*" can't.
 str_trim() { echo "$1" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//'; }
 
 #=== CLEAN's usage ============================================================
@@ -113,20 +138,6 @@ This command should be "sourced".
 	EOF
 }
 #=== PS1 =======================================================================
-mrREPO=''
-get_repo() { # $1=path
-	local dir=$(realpath "$1")
-	while [ "$dir" != / ]; do
-		[ -f "$dir/.mrc" ] && mrREPO="$dir" && return
-		dir=$(dirname "$dir"); debug "dir=$dir"
-	done; mrREPO=''
-}
-home_path() { [[ $1 =~ ^$HOME.* ]] && echo "~${1#$HOME}" || echo "$1"; }
-norm_path() { # $1=path
-	local abs=$(home_path $(realpath "$1"))
-	local rel=$(realpath --relative-to="$PWD" "$1")
-	[ ${#rel} -lt ${#abs} ] && echo "$rel" || echo "$abs"
-}
 mr_ps1() {
 	local repo='' path="$(home_path $PWD)" file="" frepo="" out=""
 	if [ -n "$MR_FILE" ] && [ -f "$MR_FILE" ]; then
@@ -318,51 +329,6 @@ the text EDITOR will be launched to edit a complex message.
 }
 
 NUMRE='^[0-9]+$'
-mrFILE=''
-a2f() { # arg->file, $1=path|id|alias, return to mrFILE: 0=found 1=new 2=fail
-	mrFILE=''
-	[ -z "$1" ] && return 2
-	[ -f "$1" ] && mrFILE="$1" && return 0
-	local dir; [ -d "$1" ] && dir="$1" || dir=$(dirname "$1")
-	debug "dir=$dir"
-	[ ! -d "$dir" ] && echo "$dir is not a valid directory." && return 2
-	get_repo "$dir"; debug "mrREPO=$mrREPO"
-	[ -z "$mrREPO" ] && echo "$dir is not in a repository." && return 2
-	eval $(grep 'MR_REPO_EXT=' "$mrREPO/.mrc");
-	debug "MR_REPO_EXT=$MR_REPO_EXT"
-	[ -z "$MR_REPO_EXT" ] && echo "No MR_REPO_EXT set, exit." && return 2
-	if [ -d "$1" ]; then
-		mrFILE="$1/.$MR_REPO_EXT"; debug "$1->$1/.$MR_REPO_EXT"
-		[ -f "$1/.$MR_REPO_EXT" ] && return 0 || return 1
-	fi
-	[ -f "$1.$MR_REPO_EXT" ] && mrFILE="$1.$MR_REPO_EXT" && return 0
-	local base=$(basename "$1"); debug "base=$base"
-	if [ "$base" = + ]; then
-		local max=$(find -H "$mrREPO" -type f \
-			-regex ".*[./][0-9]+\.$MR_REPO_EXT" \
-			-printf "%f\n" | grep -o "[0-9]\+\.$MR_REPO_EXT" \
-			| sed "s/.$MR_REPO_EXT//" | sort -n | tail -1)
-		debug "max=$max"
-		[ -z "$max" ] && base=1 || base=$(( $max + 1 ))
-		mrFILE="$dir/$base.$MR_REPO_EXT"; return 1
-	fi
-	[[ "$base" =~ ^[0-9]+$ ]] && local re=".*[./]$base.$MR_REPO_EXT" \
-		|| local re=".*/$base\.[0-9]+\.$MR_REPO_EXT"; debug "re=$re"
-	local found=$(find -H "$mrREPO" -type f -regex "$re")
-	debug "found=$found"
-	if [ -z "$found" ]; then
-		if [[ "$base" =~ ^[0-9]+$ ]]; then
-			mrFILE="$dir/$base.$MR_REPO_EXT"; return 1
-		else
-			echo "No alias '$base'."; return 2
-		fi
-	fi
-	local lc=$(wc -l <<< "$found"); debug "lc=$lc"
-	[ $lc -gt 1 ] && echo "Conflict! Multiple files found:" \
-		&& echo "$found" && return 2
-	mrFILE="$found"; return 0
-}
-
 mr_add() {
 	PARAMS=$(getopt -o a:f:d: -l append:,file:,date: -n 'mr_add' -- "$@")
 	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
