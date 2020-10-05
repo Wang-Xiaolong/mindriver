@@ -614,9 +614,8 @@ mr_edit() {
 	local mr_file=$MR_FILE date=''
 	while : ; do
 		case "$1" in
-		-f|--file) arg2file "$2"
-			[ -z "$mrFILE" ] && echo "$2 not found." && return
-			mr_file="$mrFILE"; shift 2;;
+		-f|--file) a2f "$2"; [ $? -ne 0 ] && echo "$2 not found." \
+			&& return; mr_file="$mrFILE"; shift 2;;
 		-d|--date) date="$2"; shift 2; debug "date=$date"
 			date=$(date -d "$date" '+%s')
 			[ $? -ne 0 ] && return;;
