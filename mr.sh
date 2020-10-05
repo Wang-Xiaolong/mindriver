@@ -835,8 +835,8 @@ mr_log() {
 	[ $# -eq 1 ] && f=$1
 	[ -z "$f" ] && f='.'; debug "file=$f"
 	[ -d "$f" ] && mr_log_dir "$f" $v $n "$fr" "$to" && return
-	a2f "$2"
-	[ $? -eq 0 ] && mr_log_file "$mrFILE" $v $n "$fr" "$to" && return
+	a2f "$f"; [ $? -eq 0 ] && \
+		mr_log_file "$mrFILE" $v $n "$fr" "$to" && return
 	echo "$f doesn't exist."
 }
 #=== LIST ======================================================================
