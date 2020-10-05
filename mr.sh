@@ -128,25 +128,6 @@ if [ "$mr_sourced" = true ]; then
 	echo "Current file: $(norm_path $MR_FILE)"
 	unvar; return
 fi
-#=== PUBLIC FUNCTIONS ==========================================================
-usage() {
-	cat<<-EOF
-Mind River, in which logs float down, 
-Usage:
-  . ${BASH_SOURCE[0]#$PWD/} init
-  mr [-h|--help|-?]
-  mr <command> [<args>]
-
-The commands are:
-  help          Show this document.
-  init          Make the mr command available.
-  a|add         Create a new record.
-You can run 'mr <command> <-h|--help|-?>' to get the document of each command.
-	EOF
-}
-
-str_trim() { echo "$1" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//'; }
-
 #=== PS1 =======================================================================
 mr_ps1() {
 	local repo='' path="$(home_path $PWD)" file="" frepo="" out=""
@@ -299,30 +280,6 @@ update_log() { # $1=file $2=ln $3=log or mrLOG if omitted
 	echo "$log" >> "$1"
 	sort -o "$1" -n -t '<' -k1 "$1"
 }
-insert_log() { # $1=file  Insert mrLOG into the file
-	local ts=$(get_ts)
-	local ln=$(cat $1 | awk -v ts=$ts '
-BEGIN {
-	FS="<nF>"
-}
-{
-	if ($1 > ts) {
-		print NR;
-		exit
-	}
-}
-	'); debug "ln=$ln"
-	if [ -n "$ln" ]; then
-		sed -i -e "${ln}i $mrLOG" "$1"
-	else
-		echo "$mrLOG" >> "$1"
-	fi
-}
-delete_log() { # $1=file $2=ln
-	debug "1:$1 2:$2"
-	sed -i -e "$2d" $1
-	debug "deleted"
-}
 #=== ADD =======================================================================
 usage_add() {
 	cat<<-EOF
@@ -337,8 +294,6 @@ the text EDITOR will be launched to edit a complex message.
   -i, --id=ID          Specify the thread FILE by it's ID number.
 	EOF
 }
-
-NUMRE='^[0-9]+$'
 mr_add() {
 	PARAMS=$(getopt -o a:f:d: -l append:,file:,date: -n 'mr_add' -- "$@")
 	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
@@ -347,7 +302,7 @@ mr_add() {
 	while : ; do
 		case "$1" in
 		-a|--append) append="$2"; shift 2; debug "append=$append"
-			[[ ! $append =~ $NUMRE ]] && echo \
+			[[ ! $append =~ ^[0-9]+$ ]] && echo \
 				"$append is not a number." && return;;
 		-f|--file) f="$2"; shift 2; debug "f(ile)=$f";;
 		-d|--date) date="$2"; shift 2; debug "date=$date"
@@ -922,6 +877,21 @@ BEGIN { FS="<nF>" }
 }'
 }
 #=== MAIN ======================================================================
+usage() {
+	cat<<-EOF
+Mind River, in which logs float down,
+Usage:
+  . ${BASH_SOURCE[0]#$PWD/} init
+  mr [-h|--help|-?]
+  mr <command> [<args>]
+
+The commands are:
+  help          Show this document.
+  init          Make the mr command available.
+  a|add         Create a new record.
+You can run 'mr <command> <-h|--help|-?>' to get the document of each command.
+	EOF
+}
 process_command() {
 	[ $# -eq 0 ] && usage && return 0  #No arg, show usage
 
