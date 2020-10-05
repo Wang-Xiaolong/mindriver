@@ -319,56 +319,6 @@ the text EDITOR will be launched to edit a complex message.
 
 NUMRE='^[0-9]+$'
 mrFILE=''
-# arg2file with new file creation
-arg2file_plus() { # $1=id, will set mrFILE, mrREPO and source mrREPO/.mrc
-	mrFILE=''
-	[ -z "$1" ] && return
-	[ -f "$1" ] && mrFILE=$1 && return
-	local id='' dir='' re=''
-	IFS=':' read -ra MR_ID <<< "$1"
-	if [ ${#MR_ID[@]} -eq 1 ]; then
-		id="${MR_ID[0]}" dir=.
-	elif [ ${#MR_ID[@]} -eq 2 ]; then
-		id="${MR_ID[1]}" dir="${MR_ID[0]%/}"
-	else
-		echo "Bad num of ':'s(${#MR_ID[@]}) in id!"; return
-	fi; unset MR_ID; debug "id=$id dir=$dir"
-	[ -z "$id" ] && echo "Empty id!" && return
-	[ ! -d "$dir" ] && echo "No directory $dir" && return
-	get_repo "$dir"
-	[ -z "$mrREPO" ] && echo "$dir is not in a repo" && return
-	source "$mrREPO/.mrc"
-	[ -z "$MR_REPO_EXT" ] && echo "No MR_REPO_EXT in the repo!" && return
-	if [ "$id" = + ]; then
-		local max=$(find -H "$mrREPO" -type f \
-			-regex ".*[./][0-9]+\.$MR_REPO_EXT" \
-			-printf "%f\n" | grep -o "[0-9]\+\.$MR_REPO_EXT" \
-			| sed "s/.$MR_REPO_EXT//" | sort -n | tail -1)
-		debug "max=$max"
-		[ -z "$max" ] && id=1 || id=$(( $max + 1 ))
-		mrFILE="$dir/$id.$MR_REPO_EXT"
-		return
-	fi
-	[[ "$id" =~ ^[0-9]+$ ]] && re=".*[./]$id.$MR_REPO_EXT" \
-		|| re=".*/$id\.[0-9]+\.$MR_REPO_EXT"
-	local found=$(find -H "$mrREPO" -type f -regex "$re")
-	if [ -z "$found" ]; then
-		if [[ "$id" =~ ^[0-9]+$ ]]; then
-			echo "ID $id not found."
-			read -p "Create a new file with it(y/n)? " -n 1 -r
-			[[ ! $REPLY =~ ^[Yy]$ ]] && echo && return; echo
-			mrFILE="$dir/$id.$MR_REPO_EXT"
-		else
-			echo "Alias '$id' not found."
-		fi
-		return
-	fi
-	local lc=$(wc -l <<< "$found")
-	[ $lc -gt 1 ] && echo "Conflict! Multiple files found:" \
-		&& echo "$found" && return
-	mrFILE="$found"
-}
-
 a2f() { # arg->file, $1=path|id|alias, return to mrFILE: 0=found 1=new 2=fail
 	mrFILE=''
 	[ -z "$1" ] && return 2
