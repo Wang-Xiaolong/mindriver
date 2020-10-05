@@ -61,14 +61,18 @@ a2f() { # arg->file, $1=path|id|alias, return to mrFILE: 0=found 1=new 2=fail
 		&& echo "$found" && return 2
 	mrFILE="$found"; return 0
 }
+unvar() {
+	unset mr_sourced a mr_aliases mr_params file
+	unset debug mrREPO mrFILE
+	unset -f debug home_path norm_path get_repo a2f unvar
+}
 #=== Sourced: NONE and CLEAN ===================================================
 if [ "$mr_sourced" = true ]; then
-	unset mr_sourced
 	if [ $# -eq 0 ]; then
 		echo "Command alias:"
 		alias | grep $(basename ${BASH_SOURCE[0]})
 		echo "Current file: ${MR_FILE#$PWD/}"
-		return
+		unvar; return
 	fi
 	for a in "$@"; do
 		if [ "$a" = -? ] || [ "$a" = -h ] || [ "$a" = --help ]; then
@@ -82,14 +86,14 @@ if [ "$mr_sourced" = true ]; then
 			while IFS= read -r a ; do
 				[ -z "$a" ] && continue
 				unalias $a; echo "Unalias $a"
-			done <<< "$mr_aliases"; unset mr_aliases
+			done <<< "$mr_aliases"
 		fi
 		export -n MR_SH MR_FILE
 		[ -n "$MR_PS1" ] && PS1="$MR_PS1" && unset MR_PS1
-		return
+		unvar; return
 	fi
 	mr_params=$(getopt -o c:f:p -l command:,file:,ps1 -n 'mr_src' -- "$@")
-	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
+	[ $? -ne 0 ] && echo "Failed parsing the arguments." && unvar && return
 	eval set -- "$mr_params"
 	while : ; do
 		case "$1" in
@@ -101,15 +105,15 @@ if [ "$mr_sourced" = true ]; then
 		-p|--ps1) [ -z "$MR_PS1" ] && MR_PS1="$PS1"
 			PS1='$($MR_SH ps1)'; shift;;
 		--) shift; break;;
-		*) echo "Unknown option: $1"; unset mr_params mr_id; return;;
+		*) echo "Unknown option: $1"; unvar; return;;
 		esac
-	done; unset mr_params
+	done
 	[ -z "$MR_SH" ] && echo "Error: No -c CMD, no command to use."
-	[ -z "$file" ] && return
-	a2f "$file"; [ $? -ne 0 ] && return
-	export MR_FILE=$(realpath $mrFILE); unset file
+	[ -z "$file" ] && unvar && return
+	a2f "$file"; [ $? -ne 0 ] && unvar && return
+	export MR_FILE=$(realpath $mrFILE)
 	echo "Current file: $(norm_path $MR_FILE)"
-	return
+	unvar; return
 fi
 #=== PUBLIC FUNCTIONS ==========================================================
 usage() {
