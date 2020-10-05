@@ -511,17 +511,16 @@ Set the alias for a specified file.
 	EOF
 }
 set_alias() { # $1=file $2=alias
-	arg2file "$1"
-	[ -z "$mrFILE" ] && echo "$1 not found." && return
+	a2f "$1"; [ $? -ne 0 ] && echo "$1 not found." && return
 	local dir=$(dirname $mrFILE) base=$(basename $mrFILE) file="$mrFILE"
+	[[ ! $base =~ ^(.*\.){0,1}[0-9]+\.[0-9a-zA-Z]+$ ]] && return
 	if [ -n "$2" ]; then
-		arg2file "$2"
-		[ -n "$mrFILE" ] && echo "Alias $2 already used by $mrFILE"\
-			&& return
+		a2f "$2"; [ $? -eq 0 ] && \
+			echo "Alias $2 already used by $mrFILE" && return
 		base=$(sed "s/\(.*\.\)\{0,1\}\([0-9]\+\.[0-9a-zA-Z]\+\)"\
 "/$2\.\2/" <<< "$base")
 	else
-		base=$(sed "s/\(.*\.\)\{0,1\}\([0-9]\+\.[0-9a-zA-z]\+\)/\2/"\
+		base=$(sed "s/\(.*\.\)\{0,1\}\([0-9]\+\.[0-9a-zA-Z]\+\)/\2/"\
 			<<< "$base")
 	fi
 	[ "$file" != "$dir/$base" ] && mv "$file" "$dir/$base"\
