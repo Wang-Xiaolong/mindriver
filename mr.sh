@@ -432,7 +432,7 @@ a2f() { # arg->file, $1=path|id|alias, return to mrFILE: 0=found 1=new 2=fail
 		if [[ "$base" =~ ^[0-9]+$ ]]; then
 			mrFILE="$dir/$base.$MR_REPO_EXT"; return 1
 		else
-			echo "Alias '$base' not found."; return 2
+			echo "No alias '$base'."; return 2
 		fi
 	fi
 	local lc=$(wc -l <<< "$found"); debug "lc=$lc"
@@ -570,9 +570,8 @@ mr_view() {
 	local mr_file=$MR_FILE mono=false num=false
 	while : ; do
 		case "$1" in
-		-f|--file) a2f "$2"
-			[ $? -ne 0 ] && echo "$2 not found." && return
-			mr_file="$mrFILE"; shift 2;;
+		-f|--file) a2f "$2"; [ $? -ne 0 ] && echo "$2 not found." \
+			&& return; mr_file="$mrFILE"; shift 2;;
 		-m|--mono) mono=true; shift;;
 		-n|--number) num=true; shift;;
 		--) shift; break;;
