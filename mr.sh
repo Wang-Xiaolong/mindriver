@@ -892,42 +892,33 @@ The commands are:
 You can run 'mr <command> <-h|--help|-?>' to get the document of each command.
 	EOF
 }
-process_command() {
-	[ $# -eq 0 ] && usage && return 0  #No arg, show usage
-
-	case "$1" in  #$1 is command
-	ps1) mr_ps1;;
-	init) shift; [ $help_me = true ] && usage_init || mr_init "$@";;
-	a|add) shift; [ $help_me = true ] && usage_add || mr_add "$@";;
-	alias) shift; [ $help_me = true ] && usage_alias || mr_alias "$@";;
-	v|view) shift; [ $help_me = true ] && usage_view || mr_view "$@";;
-	e|ed|edit) shift; [ $help_me = true ] && usage_edit || mr_edit "$@";;
-	m|mv|move) shift; [ $help_me = true ] && usage_move || mr_move "$@";;
-	l|log) shift; [ $help_me = true ] && usage_log || mr_log "$@";;
-	ls|list) shift; [ $help_me = true ] && usage_list || mr_list "$@";;
-	help) usage;;
-	*) local dir=$(dirname ${BASH_SOURCE[0]}) cmd=$1; shift
-		if [ -f "$dir/mr.$cmd.sh" ]; then
-			. "$dir/mr.$cmd.sh" "$@"
-		else
-			echo "Incorrect command: $cmd"
-			usage
-		fi;;
-	esac
-	return 0
-}
-
 [ $# -eq 0 ] && echo "Current File: $(norm_path $MR_FILE)" && exit
-
-# process help & debug before other options
-args=() help_me=false debug=false
-for arg in "$@"; do
-	case "$arg" in
-	'-?'|-h|--help) help_me=true;; # ? is a wildcard if not br by ''
-	--debug) debug=true;;
-	*) args+=("$arg");; # collect args other than help/debug
+help=false debug=false
+for arg do # BKM: remove arg from $@
+	shift
+	case $arg in
+		'-?'|-h|--help) help=true;;
+		--debug) debug=true;;
+		*) set -- "$@" "$arg";;
 	esac
-done
-
-[ -z $(command -v getopt) ] && echo "No getopt command." && exit 1
-process_command "${args[@]}"
+done; [ "$debug" = true ] && >&2 printf 'arg: %s\n' "$@"
+[ $# -eq 0 ] && usage && return 0  #No arg, show usage
+case "$1" in  # Command
+ps1) mr_ps1;;
+init) shift; [ "$help" = true ] && usage_init || mr_init "$@";;
+a|add) shift; [ "$help" = true ] && usage_add || mr_add "$@";;
+alias) shift; [ "$help" = true ] && usage_alias || mr_alias "$@";;
+v|view) shift; [ "$help" = true ] && usage_view || mr_view "$@";;
+e|ed|edit) shift; [ "$help" = true ] && usage_edit || mr_edit "$@";;
+m|mv|move) shift; [ "$help" = true ] && usage_move || mr_move "$@";;
+l|log) shift; [ "$help" = true ] && usage_log || mr_log "$@";;
+ls|list) shift; [ "$help" = true ] && usage_list || mr_list "$@";;
+help) usage;;
+*) local dir=$(dirname ${BASH_SOURCE[0]}) cmd=$1; shift
+	if [ -f "$dir/mr.$cmd.sh" ]; then
+		. "$dir/mr.$cmd.sh" "$@"
+	else
+		echo "Incorrect command: $cmd"
+		usage
+	fi;;
+esac
