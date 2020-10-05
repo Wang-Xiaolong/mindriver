@@ -669,9 +669,8 @@ mr_move() {
 	local mr_file=$MR_FILE
 	while : ; do
 		case "$1" in
-		-f|--file) arg2file "$2"
-			[ -z "$mrFILE" ] && echo "$2 not found." && return
-			mr_file="$mrFILE"; shift 2;;
+		-f|--file) a2f "$2"; [ $? -ne 0 ] && echo "$2 not found." \
+			&& return; mr_file="$mrFILE"; shift 2;;
 		--) shift; break;;
 		*) echo "Unknown option: $1"; return;;
 		esac
