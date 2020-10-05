@@ -651,13 +651,13 @@ mr_move() {
 	local len=${#args[@]}; debug "len=$len"
 	[ "$len" -lt 2 ] && echo "Not enough arguments." && return
 	local dest=${args[$len-1]}; debug "dest=$dest"
-	[ -d "$dest" ] && echo "Move to directory not supported." && return
+	a2f "$dest"; [ $? -eq 2 ] && return
+	dest=$(norm_path "$mrFILE")
 	if [ ! -f "$dest" ]; then
-		arg2file_plus "$dest"
-		[ -z "$mrFILE" ] && echo "Can't recognize $dest." && return
-		dest="$mrFILE"
+		read -p "Create $dest, OK(y/n)? " -n 1 -r
+		[[ ! $REPLY =~ ^[Yy]$ ]] && echo && return; echo
 	fi
-	echo "These logs will be moved to ${dest#$PWD/}:"
+	echo "These logs will be moved to $dest:"
 	local lns=( ${args[@]:0:$len-1} ); debug "lns=${lns[@]}"
 	local p_sed=''; local d_sed=''; local sep=''
 	for ln in "${lns[@]}"; do
