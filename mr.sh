@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 [[ $_ != $0 ]] && mr_sourced=true # script is being sourced
 #=== Functions for Sourced Mode ================================================
-# only "$@" can trans args properly, $@/$*/"$*" can't.
+# BKM: only "$@" can trans args properly, $@/$*/"$*" can't.
 debug() { [ "$debug" = true ] && >&2 echo "$@"; }
 home_path() { [[ $1 =~ ^$HOME.* ]] && echo "~${1#$HOME}" || echo "$1"; }
 norm_path() { # $1=path
@@ -62,7 +62,7 @@ a2f() { # arg->file, $1=path|id|alias, return to mrFILE: 0=found 1=new 2=fail
 	mrFILE="$found"; return 0
 }
 unvar() {
-	unset mr_sourced a mr_aliases mr_params file
+	unset mr_sourced arg a mr_aliases mr_params file
 	unset debug mrREPO mrFILE
 	unset -f debug home_path norm_path get_repo a2f unvar
 }
@@ -74,11 +74,14 @@ if [ "$mr_sourced" = true ]; then
 		echo "Current file: ${MR_FILE#$PWD/}"
 		unvar; return
 	fi
-	for a in "$@"; do
-		if [ "$a" = -? ] || [ "$a" = -h ] || [ "$a" = --help ]; then
-			$(realpath ${BASH_SOURCE[0]}) "$@"; return
-		fi
-	done
+	for arg do # BKM: remove arg from $@
+		shift
+		case $arg in
+			'-?'|-h|--help) echo "help!";;
+			--debug) debug=true;;
+			*) set -- "$@" "$arg";;
+		esac
+	done; [ "$debug" = true ] && >&2 printf 'arg: %s\n' "$@"
 	if [ "$1" = clean ]; then
 		if [ -n "$MR_SH" ]; then
 			mr_aliases=$(alias | grep "$MR_SH" \
