@@ -61,12 +61,22 @@ a2f() { # arg->file, $1=path|id|alias, return to mrFILE: 0=found 1=new 2=fail
 		&& echo "$found" && return 2
 	mrFILE="$found"; return 0
 }
-unvar() {
+#=== Sourced: NONE and CLEAN ===================================================
+usage_sourced() {
+	cat<<-EOF
+Usage: . $(basename ${BASH_SOURCE[0]}) [OPTION]...
+       . $(basename ${BASH_SOURCE[0]}) clean
+       . $(basename ${BASH_SOURCE[0]})
+When this script is called with "sourced mode", i.e. run within current shell,
+it will prepare the environment to run other commands, according to OPTIONs,
+or clean or display the environment.
+	EOF
+}
+unvar() { # BKM: clean variables and functions from current shell
 	unset mr_sourced arg a mr_aliases mr_params file
 	unset debug mrREPO mrFILE
-	unset -f debug home_path norm_path get_repo a2f unvar
+	unset -f debug home_path norm_path get_repo a2f usage_sourced unvar
 }
-#=== Sourced: NONE and CLEAN ===================================================
 if [ "$mr_sourced" = true ]; then
 	if [ $# -eq 0 ]; then
 		echo "Command alias:"
@@ -77,7 +87,7 @@ if [ "$mr_sourced" = true ]; then
 	for arg do # BKM: remove arg from $@
 		shift
 		case $arg in
-			'-?'|-h|--help) echo "help!";;
+			'-?'|-h|--help) usage_sourced; unvar; return;;
 			--debug) debug=true;;
 			*) set -- "$@" "$arg";;
 		esac
@@ -137,13 +147,6 @@ You can run 'mr <command> <-h|--help|-?>' to get the document of each command.
 
 str_trim() { echo "$1" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//'; }
 
-#=== CLEAN's usage ============================================================
-usage_clean() {
-	cat<<-EOF
-Usage: . ${BASH_SOURCE[0]#$PWD/} clean
-This command should be "sourced".
-	EOF
-}
 #=== PS1 =======================================================================
 mr_ps1() {
 	local repo='' path="$(home_path $PWD)" file="" frepo="" out=""
@@ -923,7 +926,6 @@ process_command() {
 	[ $# -eq 0 ] && usage && return 0  #No arg, show usage
 
 	case "$1" in  #$1 is command
-	clean) [ $help_me != true ] && echo "Not sourced."; usage_clean;;
 	ps1) mr_ps1;;
 	init) shift; [ $help_me = true ] && usage_init || mr_init "$@";;
 	a|add) shift; [ $help_me = true ] && usage_add || mr_add "$@";;
