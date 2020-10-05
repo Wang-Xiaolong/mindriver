@@ -319,34 +319,6 @@ the text EDITOR will be launched to edit a complex message.
 
 NUMRE='^[0-9]+$'
 mrFILE=''
-arg2file() { # $1=arg, will set mrFILE, mrREPO and source mrREPO/.mrc
-	mrFILE=''
-	[ -z "$1" ] && return
-	[ -f "$1" ] && mrFILE=$1 && return
-	local id='' dir='' re=''
-	IFS=':' read -ra MR_ID <<< "$1"
-	if [ ${#MR_ID[@]} -eq 1 ]; then
-		id="${MR_ID[0]}" dir=.
-	elif [ ${#MR_ID[@]} -eq 2 ]; then
-		id="${MR_ID[1]}" dir="${MR_ID[0]}"
-	else
-		echo "Bad num of ':'s(${#MR_ID[@]}) in id!"; return
-	fi; unset MR_ID
-	[ -z "$id" ] && echo "Empty id!" && return
-	[ ! -d "$dir" ] && echo "No directory $dir" && return
-	get_repo "$dir"
-	[ -z "$mrREPO" ] && echo "$dir is not in a repo" && return
-	source "$mrREPO/.mrc"
-	[ -z "$MR_REPO_EXT" ] && echo "No MR_REPO_EXT in the repo!" && return
-	[[ "$id" =~ ^[0-9]+$ ]] && re=".*[./]$id.$MR_REPO_EXT" \
-		|| re=".*/$id\.[0-9]+\.$MR_REPO_EXT"
-	local found=$(find -H "$mrREPO" -type f -regex "$re")
-	[ -z "$found" ] && debug "File not found." && return
-	local lc=$(wc -l <<< "$found")
-	[ $lc -gt 1 ] && echo "Conflict! Multiple files found:" \
-		&& echo "$found" && return
-	mrFILE="$found"
-}
 # arg2file with new file creation
 arg2file_plus() { # $1=id, will set mrFILE, mrREPO and source mrREPO/.mrc
 	mrFILE=''
