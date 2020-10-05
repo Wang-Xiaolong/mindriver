@@ -397,6 +397,50 @@ arg2file_plus() { # $1=id, will set mrFILE, mrREPO and source mrREPO/.mrc
 	mrFILE="$found"
 }
 
+a2f() { # arg->file, $1=path|id|alias, return to mrFILE: 0=found 1=new 2=fail
+	mrFILE=''
+	[ -z "$1" ] && return 2
+	[ -f "$1" ] && mrFILE="$1" && return 0
+	local dir; [ -d "$1" ] && dir="$1" || dir=$(dirname "$1")
+	debug "dir=$dir"
+	[ ! -d "$dir" ] && echo "$dir is not a valid directory." && return 2
+	get_repo "$dir"; debug "mrREPO=$mrREPO"
+	[ -z "$mrREPO" ] && echo "$dir is not in a repository." && return 2
+	eval $(grep 'MR_REPO_EXT=' "$mrREPO/.mrc");
+	debug "MR_REPO_EXT=$MR_REPO_EXT"
+	[ -z "$MR_REPO_EXT" ] && echo "No MR_REPO_EXT set, exit." && return 2
+	if [ -d "$1" ]; then
+		mrFILE="$1/.$MR_REPO_EXT"; debug "$1->$1/.$MR_REPO_EXT"
+		[ -f "$1/.$MR_REPO_EXT" ] && return 0 || return 1
+	fi
+	[ -f "$1.$MR_REPO_EXT" ] && mrFILE="$1.$MR_REPO_EXT" && return 0
+	local base=$(basename "$1"); debug "base=$base"
+	if [ "$base" = + ]; then
+		local max=$(find -H "$mrREPO" -type f \
+			-regex ".*[./][0-9]+\.$MR_REPO_EXT" \
+			-printf "%f\n" | grep -o "[0-9]\+\.$MR_REPO_EXT" \
+			| sed "s/.$MR_REPO_EXT//" | sort -n | tail -1)
+		debug "max=$max"
+		[ -z "$max" ] && base=1 || base=$(( $max + 1 ))
+		mrFILE="$dir/$base.$MR_REPO_EXT"; return 1
+	fi
+	[[ "$base" =~ ^[0-9]+$ ]] && local re=".*[./]$base.$MR_REPO_EXT" \
+		|| local re=".*/$base\.[0-9]+\.$MR_REPO_EXT"; debug "re=$re"
+	local found=$(find -H "$mrREPO" -type f -regex "$re")
+	debug "found=$found"
+	if [ -z "$found" ]; then
+		if [[ "$base" =~ ^[0-9]+$ ]]; then
+			mrFILE="$dir/$base.$MR_REPO_EXT"; return 1
+		else
+			echo "Alias '$base' not found."; return 2
+		fi
+	fi
+	local lc=$(wc -l <<< "$found"); debug "lc=$lc"
+	[ $lc -gt 1 ] && echo "Conflict! Multiple files found:" \
+		&& echo "$found" && return 2
+	mrFILE="$found"; return 0
+}
+
 mr_add() {
 	PARAMS=$(getopt -o a:f:d: -l append:,file:,date: -n 'mr_add' -- "$@")
 	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
@@ -526,8 +570,8 @@ mr_view() {
 	local mr_file=$MR_FILE mono=false num=false
 	while : ; do
 		case "$1" in
-		-f|--file) arg2file "$2"
-			[ -z "$mrFILE" ] && echo "$2 not found." && return
+		-f|--file) a2f "$2"
+			[ $? -ne 0 ] && echo "$2 not found." && return
 			mr_file="$mrFILE"; shift 2;;
 		-m|--mono) mono=true; shift;;
 		-n|--number) num=true; shift;;
