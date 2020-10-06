@@ -130,20 +130,10 @@ if [ "$mr_sourced" = true ]; then
 fi
 #=== PS1 =======================================================================
 mr_ps1() {
-	local repo='' path="$(home_path $PWD)" file="" frepo="" out=""
-	if [ -n "$MR_FILE" ] && [ -f "$MR_FILE" ]; then
-		get_repo "$MR_FILE"
-		if [ -n "$mrREPO" ]; then
-			source "$mrREPO/.mrc"
-			file=$(basename "$MR_FILE")
-			[ -n "$MR_REPO_EXT" ] && file=${file%.$MR_REPO_EXT}
-			frepo="$mrREPO"
-		else
-			file=$(norm_path "$MR_FILE")
-		fi
-	fi
+	local repo='' prepo='' path="$(home_path $PWD)" file='' frepo='' out=''
 	get_repo "$PWD"
 	if [ -n "$mrREPO" ]; then
+		prepo="$mrREPO"
 		path=$(realpath --relative-to="$mrREPO" "$PWD")
 		if [ "$path" = . ]; then
 			path='' repo="$PWD"
@@ -152,13 +142,22 @@ mr_ps1() {
 		else
 			repo="$mrREPO"
 		fi
-		[ "$frepo" = "$mrREPO" ] && frepo=''
 	fi
 	[ -n "$repo" ] && out+="\033[0;32m$(home_path $repo)"
 	[ -n "$path" ] && out+="\033[0;33m$path"
-	if [ -n "$file" ]; then
+	if [ -n "$MR_FILE" ] && [ -f "$MR_FILE" ]; then
+		get_repo "$MR_FILE"
+		if [ -n "$mrREPO" ]; then
+			eval $(grep 'MR_REPO_EXT=' "$mrREPO/.mrc")
+			[ -z "$MR_REPO_EXT" ] && echo "No MR_REPO_EXT" && return
+			file=$(realpath --relative-to="$mrREPO" "$MR_FILE")
+			file=${file%.$MR_REPO_EXT}
+			[ "$prepo" != "$mrREPO" ] && frepo="$mrREPO"
+		else
+			file=$(norm_path "$MR_FILE")
+		fi
 		out="\033[0;35m$file $out"
-		[ -n "$frepo" ] && out="\033[0;31m$(norm_path $frepo):$out"
+		[ -n "$frepo" ] && out="\033[0;31m$(norm_path $frepo)/$out"
 	fi
 	out+="\033[0m\n$ "
 	printf "$out"
