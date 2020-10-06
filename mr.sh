@@ -152,6 +152,7 @@ mr_ps1() {
 			[ -z "$MR_REPO_EXT" ] && echo "No MR_REPO_EXT" && return
 			file=$(realpath --relative-to="$mrREPO" "$MR_FILE")
 			file=${file%.$MR_REPO_EXT}
+			[ -z "$file" ] && file=.
 			[ "$prepo" != "$mrREPO" ] && frepo="$mrREPO"
 		else
 			file=$(norm_path "$MR_FILE")
