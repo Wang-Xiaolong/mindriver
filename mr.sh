@@ -142,8 +142,8 @@ mr_ps1() {
 		else
 			repo="$mrREPO"
 		fi
+		out+="\033[0;32m$(home_path $repo)"
 	fi
-	[ -n "$repo" ] && out+="\033[0;32m$(home_path $repo)"
 	[ -n "$path" ] && out+="\033[0;33m$path"
 	if [ -n "$MR_FILE" ] && [ -f "$MR_FILE" ]; then
 		get_repo "$MR_FILE"
