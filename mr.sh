@@ -29,11 +29,6 @@ a2f() { # arg->file, $1=path|id|alias
 	eval $(grep 'MR_REPO_EXT=' "$mrREPO/.mrc");
 	[ -z "$MR_REPO_EXT" ] && echo "No MR_REPO_EXT set, exit." && return 2
 	debug "dir=$dir; mrREPO=$mrREPO; MR_REPO_EXT=$MR_REPO_EXT"
-	if [ -d "$1" ]; then
-		mrFILE="$1/.$MR_REPO_EXT"; debug "$1->$1/.$MR_REPO_EXT"
-		[ -f "$1/.$MR_REPO_EXT" ] && return 0 || return 1
-	fi
-	[ -f "$1.$MR_REPO_EXT" ] && mrFILE="$1.$MR_REPO_EXT" && return 0
 	local base=$(basename "$1"); debug "base=$base"
 	if [ "$base" = + ]; then
 		local max=$(find -H "$mrREPO" -type f \
