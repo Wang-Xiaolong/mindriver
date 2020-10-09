@@ -18,18 +18,17 @@ get_repo() { # $1=path
 	done; mrREPO=''
 }
 mrFILE=''
-a2f() { # arg->file, $1=path|id|alias, return to mrFILE: 0=found 1=new 2=fail
-	mrFILE=''
+a2f() { # arg->file, $1=path|id|alias
+	mrFILE='' # return to mrFILE: 0=found 1=new 2=fail
 	[ -z "$1" ] && return 2
 	[ -f "$1" ] && mrFILE="$1" && return 0
 	local dir; [ -d "$1" ] && dir="$1" || dir=$(dirname "$1")
-	debug "dir=$dir"
 	[ ! -d "$dir" ] && echo "$dir is not a valid directory." && return 2
-	get_repo "$dir"; debug "mrREPO=$mrREPO"
+	get_repo "$dir"
 	[ -z "$mrREPO" ] && echo "$dir is not in a repository." && return 2
 	eval $(grep 'MR_REPO_EXT=' "$mrREPO/.mrc");
-	debug "MR_REPO_EXT=$MR_REPO_EXT"
 	[ -z "$MR_REPO_EXT" ] && echo "No MR_REPO_EXT set, exit." && return 2
+	debug "dir=$dir; mrREPO=$mrREPO; MR_REPO_EXT=$MR_REPO_EXT"
 	if [ -d "$1" ]; then
 		mrFILE="$1/.$MR_REPO_EXT"; debug "$1->$1/.$MR_REPO_EXT"
 		[ -f "$1/.$MR_REPO_EXT" ] && return 0 || return 1
