@@ -42,7 +42,6 @@ a2f() { # arg->file, $1=path|id|alias
 	[[ "$base" =~ ^[0-9]+$ ]] && local re=".*[./]$base.$MR_REPO_EXT" \
 		|| local re=".*/$base\.[0-9]+\.$MR_REPO_EXT"; debug "re=$re"
 	local found=$(find -H "$mrREPO" -type f -regex "$re")
-	debug "found=$found"
 	if [ -z "$found" ]; then
 		if [[ "$base" =~ ^[0-9]+$ ]]; then
 			mrFILE="$dir/$base.$MR_REPO_EXT"; return 1
@@ -50,7 +49,7 @@ a2f() { # arg->file, $1=path|id|alias
 			echo "No alias '$base'."; return 2
 		fi
 	fi
-	local lc=$(wc -l <<< "$found"); debug "lc=$lc"
+	local lc=$(wc -l <<< "$found"); debug "founc=$found; lc=$lc"
 	[ $lc -gt 1 ] && echo "Conflict! Multiple files found:" \
 		&& echo "$found" && return 2
 	mrFILE="$found"; return 0
