@@ -608,56 +608,6 @@ BEGIN { FS="<nF>" }
 	print h""sep""msg;
 }' "$1"; return 0
 }
-
-mrLOGS=''
-mr_log_collect() { # $1=files #2=dir $3=from $4=to $5=kw
-	debug "mr_log_collect("$@")"
-	local dir=$2 sep=''; [[ "$dir" != */ ]] && dir="$dir/"
-	while IFS= read -r mr_file; do
-		[ ! -f "$mr_file" ] && continue
-		local fn=${mr_file#$dir}; fn=${fn%.$MR_REPO_EXT}; debug "fn=$fn"
-		local rs=$(awk -v fn="$fn" -v fr="$3" -v to="$4" '
-BEGIN { FS="<nF>" }
-/./ {
-	if (length(fr) != 0) { if ($1 < fr) next }
-	if (length(to) != 0) { if ($1 > to) next }
-	print $1"<nF>"fn"<nF>"NR"<nF>"$2
-}' "$mr_file")
-		[ -n "$rs" ] && mrLOGS+="$sep""$rs" && sep=$'\n'
-	done <<< "$1"
-}
-
-mr_log_dir() { # $1=file $2=verbose $3=mono $4=from $5=to
-	debug "mr_log_dir($@)"
-	get_repo "$1"
-	[ -z "$mrREPO" ] && echo "$1 is not in a MindRiver repo." && return 0
-	eval $(grep 'MR_REPO_EXT=' "$mrREPO/.mrc")
-	[ -z "$MR_REPO_EXT" ] && echo "No MR_REPO_EXT set, exit." && return 0
-	local mr_files=$(find -H $1 -name "*.$MR_REPO_EXT")
-	mr_log_collect "$mr_files" "$1" "$4" "$5" ''
-	echo "$mrLOGS" | sort -n -t '<' -k1 | awk -v v="$2" -v n="$3" '
-BEGIN { FS="<nF>" }
-/./ {
-	msg = $4
-	if(v == "true") {
-		dt = strftime("[%Y-%m-%d (ww%U.%w) %H:%M:%S]", $1)
-		gsub(/<ED><nL>.*/, "...", msg)
-		gsub(/<nL>/,"\n",msg);
-		sep = "\n";
-	} else {
-		dt = strftime("%m/%d %H:%M", $1);
-		gsub(/<nL>.*/,"...",msg);
-		gsub(/<mt.*>/,"",msg);
-		sep = " "
-	}
-	if(n == "true")
-		head = dt" "$2"."$3;
-	else
-		head = "\033[0;32m"dt" \033[0;36m"$2" \033[0;33m"$3"\033[0m";
-	print head""sep""msg;
-}'; return 0
-}
-
 mr_log() {
 	PARAMS=$(getopt -o nvd: -l mono,verbose,date -n 'mr_log' -- "$@")
 	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
