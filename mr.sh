@@ -573,13 +573,19 @@ OPTIONs:
 	EOF
 }
 
-mr_log_file() { # $1=file $2=verbose $3=mono $4=from $5=to
-	awk -v v="$2" -v n="$3" -v fr="$4" -v to="$5" '
+mr_log_file() { # $1=file $2=from $3=to $4=print $5=rpath $6=verbose $7=mono
+	awk -v fr="$2" -v to="$3" -v p="$4" -v r="$5" -v v="$6" -v n="$7" '
 BEGIN { FS="<nF>" }
 /./ {
 	if (length(fr) != 0) { if ($1 < fr) next }
 	if (length(to) != 0) { if ($1 > to) next }
-	msg = $2
+	msg = $0; gsub(/^[0-9]+<nF>/, "", msg)
+	if (p == "false") {
+		head = "$1<nF>"
+		if (length(r) != 0) { head = head"<nF>"r }
+		print head"<nF>"NR"<nF>"msg
+		next
+	}
 	if(v == "true") {
 		dt = strftime("[%Y-%m-%d (ww%U.%w) %H:%M:%S]", $1)
 		gsub(/<ED><nL>.*/, "...", msg);
@@ -680,9 +686,9 @@ mr_log() {
 	[ $# -gt 1 ] && echo "Support only 1 file or dir." && return
 	[ $# -eq 1 ] && f=$1
 	[ -z "$f" ] && f='.'; debug "file=$f"
-	[ -d "$f" ] && mr_log_dir "$f" $v $n "$fr" "$to" && return
+	[ -d "$f" ] && mr_log_dir "$f" "$fr" "$to" $v $n && return
 	a2f "$f"; [ $? -eq 0 ] && \
-		mr_log_file "$mrFILE" $v $n "$fr" "$to" && return
+		mr_log_file "$mrFILE" "$fr" "$to" true '' $v $n && return
 	echo "$f doesn't exist."
 }
 #=== LIST ======================================================================
