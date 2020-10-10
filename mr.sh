@@ -10,7 +10,7 @@ norm_path() { # $1=path
 	[ ${#rel} -lt ${#abs} ] && echo "$rel" || echo "$abs"
 }
 mrREPO=''
-get_repo() { # $1=path
+p2r() { # path->repo, $1=path
 	local dir=$(realpath "$1")
 	while [ "$dir" != / ]; do
 		[ -f "$dir/.mrc" ] && mrREPO="$dir" && return
@@ -25,7 +25,7 @@ a2f() { # arg->file, $1=path|id|alias
 	[ -d "$1" ] && mrFILE="$1" && return 2
 	local dir=$(dirname "$1")
 	[ ! -d "$dir" ] && echo "$dir is not a valid directory." && return 4
-	get_repo "$dir"
+	p2r "$dir"
 	[ -z "$mrREPO" ] && echo "$dir is not in a repository." && return 5
 	eval $(grep 'MR_REPO_EXT=' "$mrREPO/.mrc");
 	[ -z "$MR_REPO_EXT" ] && echo "No MR_REPO_EXT set, exit." && return 6
@@ -69,7 +69,7 @@ or clean or display the environment.
 unvar() { # BKM: clean variables and functions from current shell
 	unset mr_sourced arg a mr_aliases mr_params file
 	unset debug mrREPO mrFILE
-	unset -f debug home_path norm_path get_repo a2f usage_sourced unvar
+	unset -f debug home_path norm_path p2r a2f usage_sourced unvar
 }
 if [ "$mr_sourced" = true ]; then
 	if [ $# -eq 0 ]; then
@@ -125,7 +125,7 @@ fi
 #=== PS1 =======================================================================
 mr_ps1() {
 	local repo='' prepo='' path="$(home_path $PWD)" file='' frepo='' out=''
-	get_repo "$PWD"
+	p2r "$PWD"
 	if [ -n "$mrREPO" ]; then
 		prepo="$mrREPO"
 		path=$(realpath --relative-to="$mrREPO" "$PWD")
@@ -140,7 +140,7 @@ mr_ps1() {
 	fi
 	[ -n "$path" ] && out+="\033[0;33m$path"
 	if [ -n "$MR_FILE" ] && [ -f "$MR_FILE" ]; then
-		get_repo "$MR_FILE"
+		p2r "$MR_FILE"
 		if [ -n "$mrREPO" ]; then
 			eval $(grep 'MR_REPO_EXT=' "$mrREPO/.mrc")
 			[ -z "$MR_REPO_EXT" ] && echo "No MR_REPO_EXT" && return
@@ -202,7 +202,7 @@ mr_init() {
 	[ $# -gt 1 ] && echo 'Too many arguments.' && return
 	[ $# -eq 1 ] && dir="$1" || dir=.
 	[ ! -d "$dir" ] && echo "$dir is not a valid directory." && return
-	get_repo "$dir"
+	p2r "$dir"
 	if [ -n "$mrREPO" ]; then
 		echo "$dir is already in a repo($mrREPO)."
 		cat "$mrREPO/.mrc"
@@ -242,7 +242,7 @@ edit_msg() { # $1=old_msg $2=file_path
 	if [[ "$ln1" =~ ^[[:punct:]]*\<.*\.[a-z]+\> ]]; then
 		type=$(sed 's/^[[:punct:]]*<.*\(\.[a-z]\+\)>.*$/\1/'<<<"$ln1")
 	elif [ -n "$2" ]; then
-		get_repo "$2"
+		p2r "$2"
 		if [ -n "$mrREPO" ]; then
 			eval $(grep 'MR_REPO_TEMP=' "$mrREPO/.mrc")
 			[ -n "$MR_REPO_TEMP" ] && type=".$MR_REPO_TEMP"
@@ -651,7 +651,7 @@ mr_log() {
 		[ -z "$first" ] && first="$paths"
 	fi
 	if [ -z "$MR_REPO_EXT" ]; then
-		get_repo "$first"
+		p2r "$first"
 		[ -z "$mrREPO" ] && echo "$first is not in a repo." && return
 		eval $(grep 'MR_REPO_EXT=' "$mrREPO/.mrc")
 		[ -z "$MR_REPO_EXT" ] && echo "No MR_REPO_EXT." && return
@@ -734,7 +734,7 @@ mr_list() {
 	[ $# -gt 1 ] && echo "Support only 1 file or dir." && return
 	[ $# -eq 1 ] && d=$1
 	[ ! -d "$d" ] && echo "$d is not a directory." && return
-	get_repo "$d"; [ -z "$mrREPO" ] && echo "$d is not in a repo." && return
+	p2r "$d"; [ -z "$mrREPO" ] && echo "$d is not in a repo." && return
 	eval $(grep 'MR_REPO_EXT=' "$mrREPO/.mrc")
 	[ -z "$MR_REPO_EXT" ] && echo "No MR_REPO_EXT set, exit." && return
 	local depth='-maxdepth 1'; [ $R = true ] && depth=''
