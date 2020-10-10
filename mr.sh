@@ -19,15 +19,16 @@ get_repo() { # $1=path
 }
 mrFILE=''
 a2f() { # arg->file, $1=path|id|alias
-	mrFILE='' # return to mrFILE: 0=found 1=new 2=fail
-	[ -z "$1" ] && return 2
+	mrFILE='' # return to mrFILE: 0=found_file 1=new 2=found_dir >2=fail
+	[ -z "$1" ] && return 3
 	[ -f "$1" ] && mrFILE="$1" && return 0
-	local dir; [ -d "$1" ] && dir="$1" || dir=$(dirname "$1")
-	[ ! -d "$dir" ] && echo "$dir is not a valid directory." && return 2
+	[ -d "$1" ] && mrFILE="$1" && return 2
+	local dir=$(dirname "$1")
+	[ ! -d "$dir" ] && echo "$dir is not a valid directory." && return 4
 	get_repo "$dir"
-	[ -z "$mrREPO" ] && echo "$dir is not in a repository." && return 2
+	[ -z "$mrREPO" ] && echo "$dir is not in a repository." && return 5
 	eval $(grep 'MR_REPO_EXT=' "$mrREPO/.mrc");
-	[ -z "$MR_REPO_EXT" ] && echo "No MR_REPO_EXT set, exit." && return 2
+	[ -z "$MR_REPO_EXT" ] && echo "No MR_REPO_EXT set, exit." && return 6
 	debug "dir=$dir; mrREPO=$mrREPO; MR_REPO_EXT=$MR_REPO_EXT"
 	local base=$(basename "$1"); debug "base=$base"
 	if [ "$base" = + ]; then
@@ -46,12 +47,12 @@ a2f() { # arg->file, $1=path|id|alias
 		if [[ "$base" =~ ^[0-9]+$ ]]; then
 			mrFILE="$dir/$base.$MR_REPO_EXT"; return 1
 		else
-			echo "No alias '$base'."; return 2
+			echo "No alias '$base'."; return 7
 		fi
 	fi
 	local lc=$(wc -l <<< "$found"); debug "founc=$found; lc=$lc"
 	[ $lc -gt 1 ] && echo "Conflict! Multiple files found:" \
-		&& echo "$found" && return 2
+		&& echo "$found" && return 8
 	mrFILE="$found"; return 0
 }
 #=== Sourced: NONE and CLEAN ===================================================
@@ -309,7 +310,7 @@ mr_add() {
 
 	local file=''
 	if [ -n "$f" ]; then
-		a2f "$f"; [ $? -eq 2 ] && return
+		a2f "$f"; [ $? -gt 1 ] && return
 		file="$mrFILE"
 	else
 		[ ! -f "$MR_FILE" ] && echo "No $MR_FILE!" && return
@@ -525,7 +526,7 @@ mr_move() {
 	local len=${#args[@]}; debug "len=$len"
 	[ "$len" -lt 2 ] && echo "Not enough arguments." && return
 	local dest=${args[$len-1]}; debug "dest=$dest"
-	a2f "$dest"; [ $? -eq 2 ] && return
+	a2f "$dest"; [ $? -gt 1 ] && return
 	dest=$(norm_path "$mrFILE")
 	if [ ! -f "$dest" ]; then
 		read -p "Create $dest, OK(y/n)? " -n 1 -r
