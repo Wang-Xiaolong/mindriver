@@ -589,20 +589,23 @@ BEGIN { FS="<nF>" }
 	}
 	if(v == "true") {
 		dt = strftime("[%Y-%m-%d (ww%U.%w) %H:%M:%S]", $1)
-		gsub(/<ED><nL>.*/, "...", msg);
-		gsub(/<nL>/,"\n",msg);
+		gsub(/<ED><nL>.*/, "...", msg)
+		gsub(/<nL>/,"\n",msg)
 		sep = "\n";
 	} else {
-		dt = strftime("%m/%d %H:%M", $1);
-		gsub(/<nL>.*/,"...",msg);
-		gsub(/<mt.*>/,"",msg);
+		dt = strftime("%m/%d %H:%M", $1)
+		gsub(/<nL>.*/,"...",msg)
+		gsub(/<mt.*>/,"",msg)
 		sep = " "
 	}
-	if(n == "true")
-		head = dt" "NR;
-	else
-		head = "\033[0;32m"dt" \033[0;33m"NR"\033[0m";
-	print head""sep""msg;
+	if(n == "true") {
+		if (length(r) == 0) h = dt" "NR # h=head
+		else h = dt" "r" "NR
+	} else {
+		if (length(r) == 0) h = "\033[0;32m"dt" \033[0;33m"NR"\033[0m"
+		else h = "\033[0;32m"dt" \033[0;35m"r" \033[0;33m"NR"\033[0m"
+	}
+	print h""sep""msg;
 }' "$1"; return 0
 }
 
@@ -684,13 +687,41 @@ mr_log() {
 		*) echo "Unknown option: $1"; return;;
 		esac
 	done
-	[ $# -gt 1 ] && echo "Support only 1 file or dir." && return
-	[ $# -eq 1 ] && f=$1
-	[ -z "$f" ] && f='.'; debug "file=$f"
-	[ -d "$f" ] && mr_log_dir "$f" "$fr" "$to" $v $n && return
-	a2f "$f"; [ $? -eq 0 ] && \
-		mr_log_file "$mrFILE" "$fr" "$to" true '' $v $n && return
-	echo "$f doesn't exist."
+
+	local paths='' first='' only=true
+	for f in "$@"; do
+		a2f "$f"; [ $? -gt 2 ] && return
+		if [ -d "$mrFILE" ] || [ -f "$mrFILE" ]; then
+			paths+=" $mrFILE"
+			[ -z "$first" ] && first="$mrFILE" || only=false
+		fi
+	done
+	if [ -z "$paths" ]; then
+		[ -z "$MR_FILE" ] && paths='.' || paths="$MR_FILE"
+		[ -z "$first" ] && first="$paths"
+	fi
+	if [ -z "$MR_REPO_EXT" ]; then
+		get_repo "$first"
+		[ -z "$mrREPO" ] && echo "$first is not in a repo." && return
+		eval $(grep 'MR_REPO_EXT=' "$mrREPO/.mrc")
+		[ -z "$MR_REPO_EXT" ] && echo "No MR_REPO_EXT." && return
+	fi
+
+	sort_arg="-k1 -k2n"
+	local found=$(find -H $paths -name "*.$MR_REPO_EXT" \
+		-printf "%p\t%T@\t%p\n" \
+		| sed "s/^\(.*\/\)\(.*\.\)\{0,1\}\([0-9]\+\)\.mr\t/\1\t\3\t/" \
+		| sort $sort_arg)
+	while IFS='' read -r line || [ -n "$line" ]; do
+		IFS=$'\t' read -r -a array <<< "$line"; debug "line=$line"
+		local path=''
+		if [ $only = false ]; then
+			path=$(norm_path ${array[3]})
+		elif [ -d "$first" ]; then
+			path=$(realpath --relative-to="$first" "${array[3]}")
+		fi
+		mr_log_file ${array[3]} "$fr" "$to" true "$path" $v $n
+	done <<< "$found"
 }
 #=== LIST ======================================================================
 usage_list() {
