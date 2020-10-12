@@ -894,7 +894,7 @@ m|mv|move) shift; [ "$help" = true ] && usage_move || mr_move "$@";;
 l|log) shift; [ "$help" = true ] && usage_log || mr_log "$@";;
 ls|list) shift; [ "$help" = true ] && usage_list || mr_list "$@";;
 help) usage;;
-*) local dir=$(dirname ${BASH_SOURCE[0]}) cmd=$1; shift
+*) dir=$(dirname ${BASH_SOURCE[0]}) cmd=$1; shift
 	if [ -f "$dir/mr.$cmd.sh" ]; then
 		. "$dir/mr.$cmd.sh" "$@"
 	else
