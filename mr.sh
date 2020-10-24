@@ -3,6 +3,14 @@
 #=== Functions for Sourced Mode ================================================
 # BKM: only "$@" can trans args properly, $@/$*/"$*" can't.
 debug() { [ "$debug" = true ] && >&2 echo "$@"; }
+# debug variable: dv a b c => a=1 b=2 c=3
+dv() { for a in "$@"; do debug "$a=${!a}"; done; }
+# debug variable with linenum: dvl $LINENO a b c
+dvl() { l=$1; shift; for a in "$@"; do debug "$l: $a=${!a}"; done; }
+# debug assign: da a b => a="b" then print the assignment
+da() { eval "$1=\"$2\""; debug "$1=\"$2\""; }
+# debug assign with linenum: dal $LINENO a b
+dal() { eval "$2=\"$3\""; debug "$1: $2=\"$3\""; }
 home_path() { [[ $1 =~ ^$HOME.* ]] && echo "~${1#$HOME}" || echo "$1"; }
 norm_path() { # $1=path
 	local abs=$(home_path $(realpath "$1"))
@@ -14,7 +22,7 @@ p2r() { # path->repo, $1=path
 	local dir=$(realpath "$1")
 	while [ "$dir" != / ]; do
 		[ -f "$dir/.mrc" ] && mrREPO="$dir" && return
-		dir=$(dirname "$dir"); debug "dir=$dir"
+		dal $LINENO dir $(dirname "$dir")
 	done; mrREPO=''
 }
 mrFILE=''
@@ -29,19 +37,18 @@ a2f() { # arg->file, $1=path|id|alias
 	[ -z "$mrREPO" ] && echo "$dir is not in a repository." && return 5
 	eval $(grep 'MR_REPO_EXT=' "$mrREPO/.mrc");
 	[ -z "$MR_REPO_EXT" ] && echo "No MR_REPO_EXT set, exit." && return 6
-	debug "dir=$dir; mrREPO=$mrREPO; MR_REPO_EXT=$MR_REPO_EXT"
-	local base=$(basename "$1"); debug "base=$base"
+	dvl $LINENO dir mrREPO MR_REPO_EXT
+	local base=$(basename "$1"); dv base
 	if [ "$base" = + ]; then
 		local max=$(find -H "$mrREPO" -type f \
 			-regex ".*[./][0-9]+\.$MR_REPO_EXT" \
 			-printf "%f\n" | grep -o "[0-9]\+\.$MR_REPO_EXT" \
-			| sed "s/.$MR_REPO_EXT//" | sort -n | tail -1)
-		debug "max=$max"
+			| sed "s/.$MR_REPO_EXT//" | sort -n | tail -1); dv max
 		[ -z "$max" ] && base=1 || base=$(( $max + 1 ))
 		mrFILE="$dir/$base.$MR_REPO_EXT"; return 1
 	fi
 	[[ "$base" =~ ^[0-9]+$ ]] && local re=".*[./]$base.$MR_REPO_EXT" \
-		|| local re=".*/$base\.[0-9]+\.$MR_REPO_EXT"; debug "re=$re"
+		|| local re=".*/$base\.[0-9]+\.$MR_REPO_EXT"; dv re
 	local found=$(find -H "$mrREPO" -type f -regex "$re")
 	if [ -z "$found" ]; then
 		if [[ "$base" =~ ^[0-9]+$ ]]; then
@@ -50,7 +57,7 @@ a2f() { # arg->file, $1=path|id|alias
 			echo "No alias '$base'."; return 7
 		fi
 	fi
-	local lc=$(wc -l <<< "$found"); debug "founc=$found; lc=$lc"
+	local lc=$(wc -l <<< "$found"); dv found lc
 	[ $lc -gt 1 ] && echo "Conflict! Multiple files found:" \
 		&& echo "$found" && return 8
 	mrFILE="$found"; return 0
@@ -67,9 +74,10 @@ or clean or display the environment.
 	EOF
 }
 unvar() { # BKM: clean variables and functions from current shell
-	unset mr_sourced arg a mr_aliases mr_params file
+	unset mr_sourced arg a l mr_aliases mr_params file
 	unset debug mrREPO mrFILE
-	unset -f debug home_path norm_path p2r a2f usage_sourced unvar
+	unset -f debug dv dvl da dal
+	unset -f home_path norm_path p2r a2f usage_sourced unvar
 }
 if [ "$mr_sourced" = true ]; then
 	if [ $# -eq 0 ]; then
