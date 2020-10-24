@@ -29,8 +29,8 @@ mrFILE=''
 a2f() { # arg->file, $1=path|id|alias
 	mrFILE='' # return to mrFILE: 0=found_file 1=new 2=found_dir >2=fail
 	[ -z "$1" ] && return 3
-	[ -f "$1" ] && mrFILE="$1" && return 0
-	[ -d "$1" ] && mrFILE="$1" && return 2
+	[ -f "$1" ] && dal $LINENO mrFILE "$1" && return 0
+	[[ "$1" == */ ]] && [ -d "$1" ] && dal $LINENO mrFILE "$1" && return 2
 	local dir=$(dirname "$1")
 	[ ! -d "$dir" ] && echo "$dir is not a valid directory." && return 4
 	p2r "$dir"
