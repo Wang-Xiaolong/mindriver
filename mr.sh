@@ -237,7 +237,7 @@ mrLOG=''
 get_log() { # $1=file $2=ln return:0/1/2,mrLOG
 	debug "get_log($1, $2)"
 	[ ! -f "$1" ] && echo "$1 not found!" && return 1
-	mrLOG=$(sed -n -e "${2}p" $1); debug "mrLOG=$mrLOG"
+	mrLOG=$(sed -n -e "${2}p" $1); dv mrLOG
 	[ -z "$mrLOG" ] && echo "Line $2 not found!" && return 2
 	return 0
 }
@@ -303,18 +303,18 @@ mr_add() {
 	local append='' f='' date=''
 	while : ; do
 		case "$1" in
-		-a|--append) append="$2"; shift 2; debug "append=$append"
+		-a|--append) append="$2"; shift 2; dv append
 			[[ ! $append =~ ^[0-9]+$ ]] && echo \
 				"$append is not a number." && return;;
-		-f|--file) f="$2"; shift 2; debug "f(ile)=$f";;
-		-d|--date) date="$2"; shift 2; debug "date=$date"
+		-f|--file) f="$2"; shift 2; dv f;;
+		-d|--date) date="$2"; shift 2; dv date
 			date=$(date -d "$date" '+%s')
 			[ $? -ne 0 ] && return;;
 		--) shift; break;;
 		*) echo "Unknown option: $1"; return;;
 		esac
 	done
-	local message="$*"; debug "message=$message"
+	local message="$*"; dv message
 
 	local file=''
 	if [ -n "$f" ]; then
@@ -330,7 +330,7 @@ mr_add() {
 		if [ ! -f "$file" ]; then
 			echo "No line#$append for no file."; return
 		fi
-		lc=$(wc -l "$file" | cut -d " " -f1); debug "lc=$lc"
+		lc=$(wc -l "$file" | cut -d " " -f1); dv lc
 		if (( $append > $lc )) || (( $append < 1 )); then
 			echo "No line#$append."; return
 		fi
@@ -341,7 +341,7 @@ mr_add() {
 
 	if [ -z "$message" ]; then
 		edit_msg '' "$file" #->mrMSG
-		[ $? -ne 0 ] && return; debug "mrMSG=$mrMSG"
+		[ $? -ne 0 ] && return; dv mrMSG
 		message=$mrMSG
 	fi
 	if [ -z $(echo $message | tr -d '[:space:]') ]; then # empty?
@@ -470,7 +470,7 @@ mr_edit() {
 		case "$1" in
 		-f|--file) a2f "$2"; [ $? -ne 0 ] && echo "$2 not found." \
 			&& return; mr_file="$mrFILE"; shift 2;;
-		-d|--date) date="$2"; shift 2; debug "date=$date"
+		-d|--date) date="$2"; shift 2; dv date
 			date=$(date -d "$date" '+%s')
 			[ $? -ne 0 ] && return;;
 		--) shift; break;;
@@ -479,28 +479,28 @@ mr_edit() {
 	done
 	[ ! -f "$mr_file" ] && echo "$mr_file doesn't exist." && return
 	[ -z "$1" ] && echo "No log# specified!" && return
-	local ln=$1; shift; debug "ln=$ln"
-	local exps="$*"; debug "exps=$exps"
+	local ln=$1; shift; dv ln
+	local exps="$*"; dv exps
 
 	get_log "$mr_file" $ln
-	[ $? -ne 0 ] && return; debug "mrLOG=$mrLOG"
-	local msg=$(get_msg); debug "msg=$msg"
+	[ $? -ne 0 ] && return; dv mrLOG
+	local msg=$(get_msg); dv msg
 
 	if [ -n "$exps" ]; then
 		local exp=""
 		for arg in "$@"; do
 			exp="$exp"$'\n'"$arg"
-		done; debug "exp=$exp"
+		done; dv exp
 		mrMSG=$(sed -e "$exp" <<< $msg)
 		[ $? -ne 0 ] && return
 		echo "The result log would be:"; echo "$mrMSG"
 		read -p "OK(y/n)? " -n 1 -r
 		[[ ! $REPLY =~ ^[Yy]$ ]] && echo && return; echo
-		mrLOG=$(set_msg); debug "mrLOG=$mrLOG"
+		mrLOG=$(set_msg); dv mrLOG
 	elif [ -z "$date" ]; then
 		edit_msg "$msg" "$mr_file" #->mrMSG
-		[ $? -ne 0 ] && return; debug "mrMSG=$mrMSG"
-		mrLOG=$(set_msg); debug "mrLOG=$mrLOG"
+		[ $? -ne 0 ] && return; dv mrMSG
+		mrLOG=$(set_msg); dv mrLOG
 	fi
 	[ -n "$date" ] && mrLOG=$(set_date $date)
 	update_log "$mr_file" $ln
@@ -531,9 +531,9 @@ mr_move() {
 	done
 	[ -z "$mr_file" ] && echo "No file specified." && return
 	local args=( $@ ); debug "args=${args[@]}"
-	local len=${#args[@]}; debug "len=$len"
+	local len=${#args[@]}; dv len
 	[ "$len" -lt 2 ] && echo "Not enough arguments." && return
-	local dest=${args[$len-1]}; debug "dest=$dest"
+	local dest=${args[$len-1]}; dv dest
 	a2f "$dest"; [ $? -gt 1 ] && return
 	dest=$(norm_path "$mrFILE")
 	if [ ! -f "$dest" ]; then
@@ -544,7 +544,7 @@ mr_move() {
 	local lns=( ${args[@]:0:$len-1} ); debug "lns=${lns[@]}"
 	local p_sed=''; local d_sed=''; local sep=''
 	for ln in "${lns[@]}"; do
-		debug "ln=$ln"
+		dv ln
 		local nr_awk=$(echo $ln | sed 's/\([0-9]\+\)/NR==\1/g')
 		local dump_awk='BEGIN { FS="<nF>" }'" $nr_awk"'{
 	dt = strftime("%m/%d %H:%M", $1);
@@ -552,12 +552,12 @@ mr_move() {
 	gsub(/<nL>.*/,"...",msg);
 	gsub(/<mt.*>/,"",msg);
 	print "\033[0;32m"dt" \033[0;36m"NR"\033[0m\t"msg;}'
-		debug "dump_awk=$dump_awk"
+		dv dump_awk
 		awk "$dump_awk" "$mr_file"
 		p_sed+="$sep${ln}p"
 		d_sed+="$sep${ln}d"
 		sep="; "
-	done; debug "p_sed=$p_sed"
+	done; dv p_sed
 	read -p "OK(y/n)? " -n 1 -r
 	[[ ! $REPLY =~ ^[Yy]$ ]] && echo && return; echo
 	sed -n "$p_sed" "$mr_file" >> "$dest"
@@ -629,7 +629,7 @@ mr_log() {
 			if [[ "$2" == *..* ]]; then
 				fr=$(sed -e 's/\.\..*//' <<< $2)
 				to=$(sed -e 's/.*\.\.//' <<< $2)
-				debug "from=$fr; to=$to"
+				dv fr to
 				fr=$(date -d "$fr" "+%s")
 				[ $? -ne 0 ] && echo "Bad from date." && return
 				to=$(date -d "$to" "+%s")
@@ -639,7 +639,7 @@ mr_log() {
 				[ $? -ne 0 ] && echo "Bad date." && return
 				fr=$(date -d "$fr" "+%s")
 				let to=$fr+86400
-			fi; debug "from=$fr; to=$to"
+			fi; dv fr to
 			shift 2;;
 		--) shift; break;;
 		*) echo "Unknown option: $1"; return;;
@@ -670,7 +670,7 @@ mr_log() {
 	local found=$(find -H $paths -regex ".*[./][0-9]+\.$MR_REPO_EXT" \
 		-printf "%p\t%T@\t%p\n" | sed "$seda" | sort $sorta)
 	while IFS='' read -r line || [ -n "$line" ]; do
-		IFS=$'\t' read -r -a array <<< "$line"; debug "line=$line"
+		IFS=$'\t' read -r -a array <<< "$line"; dv line
 		local path=''
 		if [ $only = false ]; then
 			path=$(norm_path ${array[3]})
@@ -712,7 +712,7 @@ mr_list() {
 			if [[ "$2" == *..* ]]; then
 				fr=$(sed -e 's/\.\..*//' <<< $2)
 				to=$(sed -e 's/.*\.\.//' <<< $2)
-				debug "from=$fr; to=$to"
+				dv fr to
 				fr=$(date -d "$fr" "+%s")
 				[ $? -ne 0 ] && echo "Bad from date." && return
 				to=$(date -d "$to" "+%s")
@@ -722,7 +722,7 @@ mr_list() {
 				[ $? -ne 0 ] && echo "Bad date." && return
 				fr=$(date -d "$fr" "+%s")
 				let to=$fr+86400
-			fi; debug "from=$fr; to=$to"
+			fi; dv fr to
 			shift 2;;
 		-s|--sort) case "$2" in
 			l|lt|last) s='-n -k2.4,2';;
@@ -826,7 +826,7 @@ END { gsub(/^<FN>/, "", title)
 print mt"<nF>"lt"<nF>"fn"<nF>"ln"<nF>"title"<nF>"lm }
 ' "$f")$'\n'
 		debug "4.$(date +%s.%N)"
-	done <<< "$files"; debug "lines=$lines"
+	done <<< "$files"; dv lines
 	echo "$lines" | sort -t '<' $s $r | awk -v v=$v -v n=$n '
 BEGIN { FS="<nF>" }
 /./ {
