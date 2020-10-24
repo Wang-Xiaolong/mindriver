@@ -2,7 +2,7 @@
 [[ $_ != $0 ]] && mr_sourced=true # script is being sourced
 #=== Functions for Sourced Mode ================================================
 # BKM: only "$@" can trans args properly, $@/$*/"$*" can't.
-debug() { [ "$debug" = true ] && >&2 echo "$@"; }
+debug() { [ "$debug" = true ] && >&2 echo "$@"; return 0; }
 # debug variable: dv a b c => a=1 b=2 c=3
 dv() { for a in "$@"; do debug "$a=${!a}"; done; }
 # debug variable with linenum: dvl $LINENO a b c
