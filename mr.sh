@@ -198,11 +198,11 @@ mr_init() {
 	local name='' owner='' email='' ext='' temp='' dir='' conf=''
 	while : ; do
 		case "$1" in
-		-n|--name) name="$2"; shift 2; debug "name=$append";;
-		-o|--owner) owner="$2"; shift 2; debug "owner=$owner";;
-		-e|--email) email="$2"; shift 2; debug "email=$email";;
-		-x|--ext) ext="$2"; shift 2; debug "ext=$ext";;
-		-t|--temp) temp="$2"; shift 2; debug "temp=$temp";;
+		-n|--name) name="$2"; shift 2; dv name;;
+		-o|--owner) owner="$2"; shift 2; dv owner;;
+		-e|--email) email="$2"; shift 2; dv email;;
+		-x|--ext) ext="$2"; shift 2; dv ext;;
+		-t|--temp) temp="$2"; shift 2; dv temp;;
 		--) shift; break;;
 		*) echo "Unknown option: $1"; return;;
 		esac
