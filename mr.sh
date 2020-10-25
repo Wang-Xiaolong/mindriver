@@ -4,13 +4,12 @@
 # BKM: only "$@" can trans args properly, $@/$*/"$*" can't.
 debug() { [ "$debug" = true ] && >&2 echo "$@"; return 0; }
 # debug variable: dv a b c => a=1 b=2 c=3
-dv() { for a in "$@"; do debug "$a=${!a}"; done; }
+dv() { local a; for a in "$@"; do debug "$a=${!a}"; done; }
 # debug variable with linenum: dvl $LINENO a b c
-dvl() { l=$1; shift; for a in "$@"; do debug "$l: $a=${!a}"; done; }
-# debug assign: da a b => a="b" then print the assignment
-da() { eval "$1=\"$2\""; debug "$1=\"$2\""; }
-# debug assign with linenum: dal $LINENO a b
-dal() { eval "$2=\"$3\""; debug "$1: $2=\"$3\""; }
+dvl() { local l=$1 a; shift; for a in "$@"; do debug "$l: $a=${!a}"; done; }
+# debug assign: 'da a b' => a="b" then print the assignment
+# 'da a b $LINENO' print lnum: before the assignment
+da() { local a="$1=\"$2\""; eval "$a"; [ -z "$3" ] && a="$3: $a"; debug "$a"; }
 home_path() { [[ $1 =~ ^$HOME.* ]] && echo "~${1#$HOME}" || echo "$1"; }
 norm_path() { # $1=path
 	local abs=$(home_path $(realpath "$1"))
@@ -22,15 +21,15 @@ p2r() { # path->repo, $1=path
 	local dir=$(realpath "$1")
 	while [ "$dir" != / ]; do
 		[ -f "$dir/.mrc" ] && mrREPO="$dir" && return
-		dal $LINENO dir $(dirname "$dir")
+		da dir $(dirname "$dir") $LINENO
 	done; mrREPO=''
 }
 mrFILE=''
 a2f() { # arg->file, $1=path|id|alias
 	mrFILE='' # return to mrFILE: 0=found_file 1=new 2=found_dir >2=fail
 	[ -z "$1" ] && return 3
-	[ -f "$1" ] && dal $LINENO mrFILE "$1" && return 0
-	[[ "$1" == */ ]] && [ -d "$1" ] && dal $LINENO mrFILE "$1" && return 2
+	[ -f "$1" ] && da mrFILE "$1" $LINENO && return 0
+	[[ "$1" == */ ]] && [ -d "$1" ] && da mrFILE "$1" $LINENO && return 2
 	local dir=$(dirname "$1")
 	[ ! -d "$dir" ] && echo "$dir is not a valid directory." && return 4
 	p2r "$dir"
@@ -58,7 +57,7 @@ a2f() { # arg->file, $1=path|id|alias
 			| sed "s/.$MR_REPO_EXT//" | sort -n | tail -1); dv max
 		[ -z "$max" ] && id=1 || id=$(( $max + 1 ))
 		[ -n "$alias" ] && id="$alias.$id"
-		dal $LINENO mrFILE "$dir/$id.$MR_REPO_EXT"; return 1
+		da mrFILE "$dir/$id.$MR_REPO_EXT" $LINENO; return 1
 	elif [[ "$id" =~ ^[0-9]+$ ]]; then
 		re=".*[./]$id.$MR_REPO_EXT"
 		local found2=$(find -H "$mrREPO" -type f -regex "$re")
@@ -67,11 +66,11 @@ a2f() { # arg->file, $1=path|id|alias
 				"Alias '$alias' already exist: $found" \
 				&& return 10
 			[ -n "$alias" ] && id="$alias.$id"
-			dal $LINENO mrFILE "$dir/$id.$MR_REPO_EXT"; return 1
+			da mrFILE "$dir/$id.$MR_REPO_EXT" $LINENO; return 1
 		fi
 		found="$found2"
 	elif [ -z "$found" ]; then
-		[ -d "$1" ] && dal $LINENO mrFILE "$1" && return 2
+		[ -d "$1" ] && da mrFILE "$1" $LINENO && return 2
 		echo "No alias '$alias'."; return 7
 	fi
 	local lc=$(wc -l <<< "$found"); dv found lc
@@ -91,9 +90,9 @@ or clean or display the environment.
 	EOF
 }
 unvar() { # BKM: clean variables and functions from current shell
-	unset mr_sourced arg a l mr_aliases mr_params file
+	unset mr_sourced arg mr_aliases mr_params file
 	unset debug mrREPO mrFILE
-	unset -f debug dv dvl da dal
+	unset -f debug dv dvl da
 	unset -f home_path norm_path p2r a2f usage_sourced unvar
 }
 if [ "$mr_sourced" = true ]; then
