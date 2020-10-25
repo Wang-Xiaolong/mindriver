@@ -37,8 +37,7 @@ a2f() { # arg->file, $1=path|id|alias
 	[ -z "$mrREPO" ] && echo "$dir is not in a repository." && return 5
 	eval $(grep 'MR_REPO_EXT=' "$mrREPO/.mrc");
 	[ -z "$MR_REPO_EXT" ] && echo "No MR_REPO_EXT set, exit." && return 6
-	dvl $LINENO dir mrREPO MR_REPO_EXT
-	local base=$(basename "$1"); dv base
+	local base=$(basename "$1"); dvl $LINENO dir mrREPO MR_REPO_EXT base
 	if [ "$base" = + ]; then
 		local max=$(find -H "$mrREPO" -type f \
 			-regex ".*[./][0-9]+\.$MR_REPO_EXT" \
