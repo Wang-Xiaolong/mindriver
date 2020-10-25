@@ -38,23 +38,41 @@ a2f() { # arg->file, $1=path|id|alias
 	eval $(grep 'MR_REPO_EXT=' "$mrREPO/.mrc");
 	[ -z "$MR_REPO_EXT" ] && echo "No MR_REPO_EXT set, exit." && return 6
 	local base=$(basename "$1"); dvl $LINENO dir mrREPO MR_REPO_EXT base
-	if [ "$base" = + ]; then
+	local id='' alias='' re='' found=''
+	if [[ $base =~ ^(.*\.){0,1}([0-9]+|\+)$ ]]; then
+		id=$(sed 's/^\(.*\.\)\?\([0-9]\+\|+\)$/\2/' <<< "$base")
+		alias=$(sed "s/\.\?$id$//" <<< "$base")
+	else
+		alias="$base"
+	fi; dvl $LINENO id alias
+	if [ -n "$alias" ]; then
+		re=".*/$alias\.[0-9]+\.$MR_REPO_EXT"
+		found=$(find -H "$mrREPO" -type f -regex "$re")
+	fi
+	if [ "$id" = + ]; then
+		[ -n "$found" ] && echo "Alias '$alias' already exist: $found"\
+			&& return 9
 		local max=$(find -H "$mrREPO" -type f \
 			-regex ".*[./][0-9]+\.$MR_REPO_EXT" \
 			-printf "%f\n" | grep -o "[0-9]\+\.$MR_REPO_EXT" \
 			| sed "s/.$MR_REPO_EXT//" | sort -n | tail -1); dv max
-		[ -z "$max" ] && base=1 || base=$(( $max + 1 ))
-		mrFILE="$dir/$base.$MR_REPO_EXT"; return 1
-	fi
-	[[ "$base" =~ ^[0-9]+$ ]] && local re=".*[./]$base.$MR_REPO_EXT" \
-		|| local re=".*/$base\.[0-9]+\.$MR_REPO_EXT"; dv re
-	local found=$(find -H "$mrREPO" -type f -regex "$re")
-	if [ -z "$found" ]; then
-		if [[ "$base" =~ ^[0-9]+$ ]]; then
-			mrFILE="$dir/$base.$MR_REPO_EXT"; return 1
-		else
-			echo "No alias '$base'."; return 7
+		[ -z "$max" ] && id=1 || id=$(( $max + 1 ))
+		[ -n "$alias" ] && id="$alias.$id"
+		dal $LINENO mrFILE "$dir/$id.$MR_REPO_EXT"; return 1
+	elif [[ "$id" =~ ^[0-9]+$ ]]; then
+		re=".*[./]$id.$MR_REPO_EXT"
+		local found2=$(find -H "$mrREPO" -type f -regex "$re")
+		if [ -z "$found2" ]; then
+			[ -n "$found" ] && echo \
+				"Alias '$alias' already exist: $found" \
+				&& return 10
+			[ -n "$alias" ] && id="$alias.$id"
+			dal $LINENO mrFILE "$dir/$id.$MR_REPO_EXT"; return 1
 		fi
+		found="$found2"
+	elif [ -z "$found" ]; then
+		[ -d "$1" ] && dal $LINENO mrFILE "$1" && return 2
+		echo "No alias '$alias'."; return 7
 	fi
 	local lc=$(wc -l <<< "$found"); dv found lc
 	[ $lc -gt 1 ] && echo "Conflict! Multiple files found:" \
