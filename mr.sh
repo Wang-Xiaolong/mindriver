@@ -693,6 +693,7 @@ mr_log() {
 		elif [ -d "$first" ]; then
 			path=$(realpath --relative-to="$first" "${array[3]}")
 		fi
+		path=${path%.$MR_REPO_EXT}
 		mr_log_file ${array[3]} "$fr" "$to" true "$path" $v $n
 	done <<< "$found"
 }
