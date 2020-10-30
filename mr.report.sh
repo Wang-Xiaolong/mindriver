@@ -70,8 +70,28 @@ END { if (all_text != "") { print "-- "title"\n"all_text }}' "${fields[1]}")
 		[ -n "$head" ] && echo "$head" && head=''
 		echo "$output"
 	done <<< "$files"
-	for fn in $2/*; do
-		[ -d "$fn" ] && report_dir "$1" "$fn" "$3" "$4"
-	done
+	local dir dirs=''
+	for dir in $2/*; do
+		[ ! -d "$dir" ] && continue
+		if [ -f "$dir/.mrd" ]; then
+			local SORT='' grepex=$(grep "SORT=" "$dir/.mrd")
+			if [ -n "$grepex" ]; then
+				eval "$grepex"
+				if [ -n "$SORT" ]; then
+					dirs+="$SORT"$'\t'"$dir"$'\n'
+					continue
+				fi
+			fi
+		fi
+		dirs+="$(basename $dir)"$'\t'"$dir"$'\n'
+	done; dv dirs
+	[ -z "$dirs" ] && return
+	dirs=$(echo "$dirs" | sort -k1); dv dirs
+	while IFS='' read -r line || [ -n "$line" ]; do
+		[ -z "$line" ] && continue
+		IFS=$'\t' read -r -a fields <<< "$line"
+		debug "fields=(${fields[0]}, ${fields[1]})"
+		report_dir "$1" "${fields[1]}" "$3" "$4"
+	done <<< "$dirs"
 }
 report_dir "$1" "$1" "$fr" "$to"
