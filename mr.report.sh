@@ -39,7 +39,15 @@ done
 [ ! -d "$1" ] && echo "$1 is not a valid directory." && return
 
 report_dir() { # $1=root $2=dir $3=fr $4=to
-	local head="== ${2#$1/}"
+	local head="== ${2#$1/}" grepres NAME=''
+	if [ -f "$2/.mrd" ]; then
+		grepres=$(grep "NAME=" "$2/.mrd")
+		if [ -n "$grepres" ]; then
+			eval "$grepres"
+			[ -n "$NAME" ] && head="== $NAME"
+		fi
+	fi
+
 	local sedex='s/^\(.*\.\)\?\([0-9]\+\)\.mr/\2/'
 	local files=$(find -H "$2" -maxdepth 1 -type f -name "*.mr" \
 		-printf "%f\t%p\n" | sed "$sedex" | sort -k1n)
@@ -74,9 +82,10 @@ END { if (all_text != "") { print "-- "title"\n"all_text }}' "${fields[1]}")
 	for dir in $2/*; do
 		[ ! -d "$dir" ] && continue
 		if [ -f "$dir/.mrd" ]; then
-			local SORT='' grepex=$(grep "SORT=" "$dir/.mrd")
-			if [ -n "$grepex" ]; then
-				eval "$grepex"
+			local SORT=''
+			grepres=$(grep "SORT=" "$dir/.mrd")
+			if [ -n "$grepres" ]; then
+				eval "$grepres"
 				if [ -n "$SORT" ]; then
 					dirs+="$SORT"$'\t'"$dir"$'\n'
 					continue
