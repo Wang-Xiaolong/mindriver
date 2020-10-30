@@ -40,8 +40,12 @@ done
 
 report_dir() { # $1=root $2=dir $3=fr $4=to
 	local head="== ${2#$1/}"
-	for fn in $2/*.mr; do
-		[ ! -f "$fn" ] && continue
+	local sedex='s/^\(.*\.\)\?\([0-9]\+\)\.mr/\2/'
+	local files=$(find -H "$2" -maxdepth 1 -name "*.mr" -printf "%f\t%p\n" \
+		| sed "$sedex" | sort -k1n)
+	while IFS='' read -r line || [ -n "$line" ]; do
+		IFS=$'\t' read -r -a fields <<< "$line"
+		[ ! -f "${fields[1]}" ] && continue
 		local output=$(awk -v fr=$3 -v to=$4 '
 BEGIN { FS="<nF>"; all_text="" }
 /./ {
@@ -62,11 +66,11 @@ BEGIN { FS="<nF>"; all_text="" }
 		all_text = all_text""date" "text"\n"
 	}
 }
-END { if (all_text != "") { print "-- "title"\n"all_text }}' "$fn")
+END { if (all_text != "") { print "-- "title"\n"all_text }}' "${fields[1]}")
 		[ -z "$output" ] && continue
 		[ -n "$head" ] && echo "$head" && head=''
 		echo "$output"
-	done
+	done <<< "$files"
 	for fn in $2/*; do
 		[ -d "$fn" ] && report_dir "$1" "$fn" "$3" "$4"
 	done
