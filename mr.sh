@@ -567,7 +567,7 @@ mr_move() {
 	msg = $2
 	gsub(/<nL>.*/,"...",msg);
 	gsub(/<mt.*>/,"",msg);
-	print "\033[0;32m"dt" \033[0;36m"NR"\033[0m\t"msg;}'
+	print "\033[0;32m"dt" \033[0;33m"NR"\033[0m\t"msg;}'
 		dv dump_awk
 		awk "$dump_awk" "$mr_file"
 		p_sed+="$sep${ln}p"
