@@ -681,8 +681,8 @@ mr_log() {
 		[ -z "$MR_REPO_EXT" ] && echo "No MR_REPO_EXT." && return
 	fi
 
-	sedex="s/^\(.*\/\)\(.*\.\)\{0,1\}\([0-9]\+\)\.$MR_REPO_EXT\t/\1\t\3\t/"
-	sortex="-k1 -k2n"
+	local sedex="s/^\(.*\/\)\(.*\.\)\{0,1\}\([0-9]\+\)\.$MR_REPO_EXT\t"\
+"/\1\t\3\t/" sortex="-k1 -k2n"
 	local found=$(find -H $paths -regex ".*[./][0-9]+\.$MR_REPO_EXT" \
 		-printf "%p\t%T@\t%p\n" | sed "$sedex" | sort $sortex)
 	while IFS='' read -r line || [ -n "$line" ]; do
