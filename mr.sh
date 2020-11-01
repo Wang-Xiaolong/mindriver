@@ -720,7 +720,7 @@ mr_list() {
 		-n 'mr_list' -- "$@")
 	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
 	eval set -- "$PARAMS"; debug "mr_list($@)"
-	local n=false v=false fr='' to='' d="." s="" r='' R=false
+	local n=false v=false fr='' to='' d="." s="" r='' depth='-maxdepth 1'
 	while : ; do
 		case "$1" in
 		-n|--mono) n=true; shift;;
@@ -750,7 +750,7 @@ mr_list() {
 			*) echo "Unknown sort key word: $2"; return;;
 			esac; shift 2;;
 		-r|--reverse) r='-r'; shift;;
-		-R|--recursive) R=true; shift;;
+		-R|--recursive) depth=''; shift;;
 		--) shift; break;;
 		*) echo "Unknown option: $1"; return;;
 		esac
@@ -761,7 +761,6 @@ mr_list() {
 	p2r "$d"; [ -z "$mrREPO" ] && echo "$d is not in a repo." && return
 	eval $(grep 'MR_REPO_EXT=' "$mrREPO/.mrc")
 	[ -z "$MR_REPO_EXT" ] && echo "No MR_REPO_EXT set, exit." && return
-	local depth='-maxdepth 1'; [ $R = true ] && depth=''
 	local files=$(find -H "$d" $depth -regex ".*[/.][0-9]+.$MR_REPO_EXT")
 	[[ $d != */ ]] && d="$d/"
 	if [ -z "$s" ]; then # no sort, fast output
