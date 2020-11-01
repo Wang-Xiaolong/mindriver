@@ -720,7 +720,7 @@ mr_list() {
 		-n 'mr_list' -- "$@")
 	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
 	eval set -- "$PARAMS"; debug "mr_list($@)"
-	local n=false v=false fr='' to='' d="." s="" r='' depth='-maxdepth 1'
+	local n=false v=false fr='' to='' d=. s='' r='' depth='-maxdepth 1'
 	while : ; do
 		case "$1" in
 		-n|--mono) n=true; shift;;
