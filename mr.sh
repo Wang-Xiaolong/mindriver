@@ -671,7 +671,7 @@ mr_log() {
 		fi
 	done
 	if [ -z "$paths" ]; then
-		[ -z "$MR_FILE" ] && paths='.' || paths="$MR_FILE"
+		[ -z "$MR_FILE" ] && paths=. || paths="$MR_FILE"
 		[ -z "$first" ] && first="$paths"
 	fi
 	if [ -z "$MR_REPO_EXT" ]; then
