@@ -720,7 +720,7 @@ mr_list() {
 		-n 'mr_list' -- "$@")
 	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
 	eval set -- "$PARAMS"; debug "mr_list($@)"
-	local n=false v=false fr='' to='' d=. s='' r='' depth='-maxdepth 1'
+	local n=false v=false fr='' to='' d=. s='' r='' depth='-maxdepth 1' sort=''
 	while : ; do
 		case "$1" in
 		-n|--mono) n=true; shift;;
@@ -728,8 +728,7 @@ mr_list() {
 		-d|--date)
 			if [[ "$2" == *..* ]]; then
 				fr=$(sed -e 's/\.\..*//' <<< $2)
-				to=$(sed -e 's/.*\.\.//' <<< $2)
-				dv fr to
+				to=$(sed -e 's/.*\.\.//' <<< $2); dv fr to
 				fr=$(date -d "$fr" "+%s")
 				[ $? -ne 0 ] && echo "Bad from date." && return
 				to=$(date -d "$to" "+%s")
@@ -741,58 +740,67 @@ mr_list() {
 				let to=$fr+86400
 			fi; dv fr to
 			shift 2;;
-		-s|--sort) case "$2" in
-			l|lt|last) s='-n -k2.4,2';;
-			m|mt|mtime) s='-n -k1,1';;
-			i|id) s='-n -k3.4,3';;
-			d|dir) s='-k5.4,5 -k3.4,3n';;
-			--) break;;
-			*) echo "Unknown sort key word: $2"; return;;
-			esac; shift 2;;
+		-s|--sort) sort=$2; shift 2;;
 		-r|--reverse) r='-r'; shift;;
 		-R|--recursive) depth=''; shift;;
 		--) shift; break;;
 		*) echo "Unknown option: $1"; return;;
 		esac
 	done
-	[ $# -gt 1 ] && echo "Support only 1 file or dir." && return
-	[ $# -eq 1 ] && d=$1
-	[ ! -d "$d" ] && echo "$d is not a directory." && return
-	p2r "$d"; [ -z "$mrREPO" ] && echo "$d is not in a repo." && return
-	eval $(grep 'MR_REPO_EXT=' "$mrREPO/.mrc")
-	[ -z "$MR_REPO_EXT" ] && echo "No MR_REPO_EXT set, exit." && return
-	local files=$(find -H "$d" $depth -regex ".*[/.][0-9]+.$MR_REPO_EXT")
-	[[ $d != */ ]] && d="$d/"
-	if [ -z "$s" ]; then # no sort, fast output
-		while IFS= read -r f; do
-			[ -z "$f" ] || [ ! -f "$f" ] && continue
-			local fn=${f#$d}
-			fn=$(sed "s/^\(.*\/\)\{0,1\}\(\(.*\)\.\)\{0,1\}"\
-"\([0-9]\+\)\.$MR_REPO_EXT$/-v id=\4 -v as=\3 -v dir=\1/" <<< "$fn")
-			awk -v v=$v -v n=$n $fn '
-BEGIN { FS="<nF>" }
+	local paths='' first='' only=true
+	for f in "$@"; do
+		a2f "$f"; [ $? -gt 2 ] && return
+		if [ -d "$mrFILE" ] || [ -f "$mrFILE" ]; then
+			paths+=" $mrFILE"
+			[ -z "$first" ] && first="$mrFILE" || only=false
+		fi
+	done
+	if [ -z "$paths" ]; then
+		[ -z "$MR_FILE" ] && paths=. || paths="$MR_FILE"
+		[ -z "$first" ] && first="$paths"
+	fi
+	if [ -z "$MR_REPO_EXT" ]; then
+		p2r "$first"
+		[ -z "$mrREPO" ] && echo "$first is not in a repo." && return
+		eval $(grep 'MR_REPO_EXT=' "$mrREPO/.mrc")
+		[ -z "$MR_REPO_EXT" ] && echo "No MR_REPO_EXT." && return
+	fi; dv paths first mrREPO MR_REPO_EXT
+
+	local printfex sedex sortex pi pr
+	case "$sort" in
+	'') printfex="%p\t%p\n" sortex="-k1 -k2n" pi=2 pr=true
+	sedex="s/^\(.*\/\)\(.*\.\)\{0,1\}\([0-9]\+\)\.$MR_REPO_EXT\t/\1\t\3\t/";;
+	i|id) printfex="%f\t%p\n" sortex="-k1n" pi=1 pr=true
+	sedex="s/^\(.*\.\)\{0,1\}\([0-9]\+\)\.$MR_REPO_EXT\t/\2\t/";;
+	m|mt|mtime) printfex="%T@\t%p\n" sortex="-k1n" pi=1 pr=true;;
+	t|title) pr=false; sortex2="-k3 -f";;
+	l|lt|last) pr=false; sortex2="-k1n";;
+	--) break;;
+	*) echo "Unknown sort key word: $2"; return;;
+	esac; 
+
+	local findex="find -H $paths -regex .*[./][0-9]+\.$MR_REPO_EXT"
+	[ -n "$printfex" ] && findex+=" -printf \"$printfex\""
+	[ -n "$sedex" ] && findex+=" | sed \"$sedex\""
+	[ -n "$sortex" ] && findex+=" | sort $sortex $r"
+	local found=$(eval $findex); dv findex found
+	local awkex='BEGIN { FS="<nF>" }
 /./ {
-	if (NR == 1) {
-		title = $2; ln = 1; lt = $1; lm = ""
-	} else {
-		if ($2 ~ /<FN>.*/) {
-			title = $2
-		} else {
-			ln = NR; lt = $1; lm = $2
-		}
+	if (NR == 1) { title = $2; ln = 1; lt = $1; lm = "" }
+	else {
+		if ($2 ~ /<FN>.*/) { title = $2	}
+		else { ln = NR; lt = $1; lm = $2 }
 	}
 }
 END {
-	if(as == "")
-		idas = id
-	else
-		idas = id"."as
-	if(dir == "." || dir == "")
-		dir = ""
-	else
-		dir = dir"# "
+	if (length(fr) != 0) { if (lt < fr) exit }
+	if (length(to) != 0) { if (lt > to) exit }
 	gsub(/<nL>.*/, "", title)
 	gsub(/^<FN>/, "", title)
+	if(pr != "true") {
+		print lt"<nF>"path"<nF>"title"<nF>"ln"<nF>"lm
+		exit
+	}
 	if(v == "true") {
 		lt = strftime("[%Y-%m-%d (ww%U.%w) %H:%M:%S]", lt)
 		gsub(/<ED><nL>.*/, "...", lm)
@@ -805,80 +813,56 @@ END {
 		sep = " "
 	}
 	if(n == "true")
-		head = lt" "idas" "dir""title" #"lc
+		head = lt" "path" "title" #"ln
 	else {
-		head = "\033[0;32m"lt" \033[0;35m"idas" \033[0;33m"dir
-		head = head"\033[0;36m"title" \033[0;33m#"ln"\033[0m"
+		head = "\033[0;32m"lt" \033[0;35m"path
+		head = head" \033[0;36m"title" \033[0;33m"ln"\033[0m"
 	}
 	print head""sep""lm
-}' "$f"
-		done <<< "$files"
-		return
-	fi
-	local lines=''
-	while IFS= read -r f; do
-		debug "0.$(date +%s.%N)"
-		[ -z "$f" ] || [ ! -f "$f" ] && continue
-		local fn=${f#$d};
-		debug "0.1.$(date +%s.%N) fn=$fn"
-		fn=$(sed "s/^\(.*\/\)\{0,1\}\(\(.*\)\.\)\{0,1\}\([0-9]\+\)"\
-"\.$MR_REPO_EXT$/\4<nF>\3<nF>\1/" <<< "$fn")
-		debug "1.$(date +%s.%N) fn=$fn"
-		local mt=$(date -r "$f" "+%s")
-		lines+=$(awk -v mt=$mt -v fn=$fn '
-BEGIN { FS="<nF>" }
+}' lines=''
+	while IFS='' read -r line || [ -n "$line" ]; do
+		[ -z "$line" ] && continue
+		local fields path dpath
+		if [ $pr = true ]; then
+			IFS=$'\t' read -r -a fields <<< "$line"
+			path="${fields[$pi]}"
+		else
+			path="$line"
+		fi
+		if [ $only = true ] && [ -d "$first" ]; then
+			dpath=$(realpath --relative-to="$first" "$path")
+		else
+			dpath=$(norm_path "$path")
+		fi
+		dpath=${dpath%.$MR_REPO_EXT}; dv dpath pr
+		[ $pr = true ] && awk -v path="$dpath" -v v=$v -v n=$n \
+			-v pr=$pr -v fr=$fr -v to=$to "$awkex" $path \
+			|| lines+=$(awk -v path="$dpath" -v pr=$pr -v fr=$fr \
+			-v to=$to "$awkex" $path)$'\n'
+	done <<< "$found"
+	[ $pr = true ] && return
+	awk -v v=$v -v n=$n 'BEGIN { FS="<nF>" }
 /./ {
-	if (NR == 1) {
-		title = $2; ln = 1; lt = $1; lm = ""
-	} else {
-		if ($2 ~ /<FN>.*/) {
-			title = $2
-		} else {
-			ln = NR; lt = $1; lm = $2
-		}
-	}
-}
-END { gsub(/^<FN>/, "", title)
-print mt"<nF>"lt"<nF>"fn"<nF>"ln"<nF>"title"<nF>"lm }
-' "$f")$'\n'
-		debug "4.$(date +%s.%N)"
-	done <<< "$files"; dv lines
-	echo "$lines" | sort -t '<' $s $r | awk -v v=$v -v n=$n '
-BEGIN { FS="<nF>" }
-/./ {
-	if (length(fr) != 0) { if ($7 < fr) next }
-	if (length(to) != 0) { if ($7 > to) next }
-	lm = $8
-	if($4 == "")
-		idas = $3
-	else
-		idas = $3":"$4
-	if($5 == "." || $5 == "")
-		dir = ""
-	else
-		dir = $5"# "
-	ln = $6
-	title = $7
-	gsub(/<nL>.*/,"",title)
+	path = $2; title = $3; ln = $4; lm = $5
 	if(v == "true") {
-		lt = strftime("[%Y-%m-%d (ww%U.%w) %H:%M:%S]", $2)
+		lt = strftime("[%Y-%m-%d (ww%U.%w) %H:%M:%S]", $1)
 		gsub(/<ED><nL>.*/, "...", lm)
 		gsub(/<nL>/, "\n", lm)
 		sep = "\n"
 	} else {
-		lt = strftime("%m/%d %H:%M", $2)
+		lt = strftime("%m/%d %H:%M", $1)
 		gsub(/<nL>.*/, "...", lm)
 		gsub(/<mt.*>/, "", lm)
 		sep = " "
 	}
 	if(n == "true")
-		head = lt" "idas" "dir""title" #"ln
+		head = lt" "path""title" #"ln
 	else {
-		head = "\033[0;32m"lt" \033[0;35m"idas" \033[0;33m"dir
-		head = head"\033[0;36m"title" \033[0;33m#"ln"\033[0m"
+		head = "\033[0;32m"lt" \033[0;35m"path
+		head = head" \033[0;36m"title" \033[0;33m"ln"\033[0m"
 	}
 	print head""sep""lm
-}'
+}' <<< $(sort -t '<' $sortex2 $r <<< "$lines")
 }
 #=== MAIN ======================================================================
 usage() {
