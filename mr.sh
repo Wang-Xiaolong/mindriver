@@ -775,7 +775,7 @@ mr_list() {
 			fi; dv fr to
 			shift 2;;
 		-s|--sort) sort=$2; shift 2;;
-		-r|--reverse) r='-r'; shift;;
+		-r|--reverse) r='r'; shift;;
 		-R|--recursive) depth=''; shift;;
 		--) shift; break;;
 		*) echo "Unknown option: $1"; return;;
@@ -802,13 +802,13 @@ mr_list() {
 
 	local printfex sedex sortex pi pr
 	case "$sort" in
-	'') printfex="%p\t%p\n" sortex="-k1 -k2n" pi=2 pr=true
+	'') printfex="%p\t%p\n" sortex="-k1$r -k2n$r" pi=2 pr=true
 	sedex="s/^\(.*\/\)\(.*\.\)\{0,1\}\([0-9]\+\)\.$MR_REPO_EXT\t/\1\t\3\t/";;
-	i|id) printfex="%f\t%p\n" sortex="-k1n" pi=1 pr=true
+	i|id) printfex="%f\t%p\n" sortex="-k1n$r" pi=1 pr=true
 	sedex="s/^\(.*\.\)\{0,1\}\([0-9]\+\)\.$MR_REPO_EXT\t/\2\t/";;
-	m|mt|mtime) printfex="%T@\t%p\n" sortex="-k1n" pi=1 pr=true;;
-	t|title) pr=false; sortex2="-k3 -f";;
-	l|lt|last) pr=false; sortex2="-k1n";;
+	m|mt|mtime) printfex="%T@\t%p\n" sortex="-k1n$r" pi=1 pr=true;;
+	t|title) pr=false; sortex2="-k3$r -f";;
+	l|lt|last) pr=false; sortex2="-k1n$r";;
 	--) break;;
 	*) echo "Unknown sort key word: $2"; return;;
 	esac; 
@@ -816,7 +816,7 @@ mr_list() {
 	local findex="find -H $paths -regex .*[./][0-9]+\.$MR_REPO_EXT"
 	[ -n "$printfex" ] && findex+=" -printf \"$printfex\""
 	[ -n "$sedex" ] && findex+=" | sed \"$sedex\""
-	[ -n "$sortex" ] && findex+=" | sort $sortex $r"
+	[ -n "$sortex" ] && findex+=" | sort $sortex"
 	local found=$(eval $findex); dv findex found
 	local awkex='BEGIN { FS="<nF>" }
 /./ {
@@ -896,7 +896,7 @@ END {
 		head = head" \033[0;36m"title" \033[0;33m"ln"\033[0m"
 	}
 	print head""sep""lm
-}' <<< $(sort -t '<' $sortex2 $r <<< "$lines")
+}' <<< $(sort -t '<' $sortex2 <<< "$lines")
 }
 #=== MAIN ======================================================================
 usage() {
