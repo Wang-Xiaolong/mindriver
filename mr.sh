@@ -604,7 +604,7 @@ mr_log() {
 		-n 'mr_log' -- "$@")
 	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
 	eval set -- "$PARAMS"; debug "mr_log($@)"
-	local n=false v=false fr='' to='' sort='' f="$MR_FILE"
+	local n=false v=false fr='' to='' sort=''
 	while : ; do
 		case "$1" in
 		-n|--mono) n=true; shift;;
@@ -785,8 +785,7 @@ mr_list() {
 		fi
 	done
 	if [ -z "$paths" ]; then
-		[ -z "$MR_FILE" ] && paths=. || paths="$MR_FILE"
-		[ -z "$first" ] && first="$paths"
+		paths=.; [ -z "$first" ] && first="$paths"
 	fi
 	if [ -z "$MR_REPO_EXT" ]; then
 		p2r "$first"
