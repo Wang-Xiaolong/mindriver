@@ -595,48 +595,16 @@ OPTIONs:
 			can can also be a range like DATE1..DATE2.
   -n, --mono		stop display color in the result.
   -v, --verbose		display verbose result.
+  -s, --sort		SORT the records in the order of date.
+  -r, --reverse		sort the records in the REVERSEd date order.
 	EOF
 }
-
-mr_log_file() { # $1=file $2=from $3=to $4=print $5=rpath $6=verbose $7=mono
-	awk -v fr="$2" -v to="$3" -v p="$4" -v r="$5" -v v="$6" -v n="$7" '
-BEGIN { FS="<nF>" }
-/./ {
-	if (length(fr) != 0) { if ($1 < fr) next }
-	if (length(to) != 0) { if ($1 > to) next }
-	msg = $0; gsub(/^[0-9]+<nF>/, "", msg)
-	if (p == "false") {
-		head = "$1<nF>"
-		if (length(r) != 0) { head = head"<nF>"r }
-		print head"<nF>"NR"<nF>"msg
-		next
-	}
-	if(v == "true") {
-		dt = strftime("[%Y-%m-%d (ww%U.%w) %H:%M:%S]", $1)
-		gsub(/<ED><nL>.*/, "...", msg)
-		gsub(/<nL>/,"\n",msg)
-		sep = "\n";
-	} else {
-		dt = strftime("%m/%d %H:%M", $1)
-		gsub(/<nL>.*/,"...",msg)
-		gsub(/<mt.*>/,"",msg)
-		sep = " "
-	}
-	if(n == "true") {
-		if (length(r) == 0) h = dt" "NR # h=head
-		else h = dt" "r" "NR
-	} else {
-		if (length(r) == 0) h = "\033[0;32m"dt" \033[0;33m"NR"\033[0m"
-		else h = "\033[0;32m"dt" \033[0;35m"r" \033[0;33m"NR"\033[0m"
-	}
-	print h""sep""msg;
-}' "$1"; return 0
-}
 mr_log() {
-	PARAMS=$(getopt -o nvd: -l mono,verbose,date -n 'mr_log' -- "$@")
+	PARAMS=$(getopt -o nvd:sr -l mono,verbose,date:,sort,reverse \
+		-n 'mr_log' -- "$@")
 	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
 	eval set -- "$PARAMS"; debug "mr_log($@)"
-	local n=false v=false fr='' to='' f="$MR_FILE"
+	local n=false v=false fr='' to='' sort='' f="$MR_FILE"
 	while : ; do
 		case "$1" in
 		-n|--mono) n=true; shift;;
@@ -657,6 +625,8 @@ mr_log() {
 				let to=$fr+86400
 			fi; dv fr to
 			shift 2;;
+		-s|--sort) sort='-k1n'; shift;;
+		-r|--reverse) sort='-k1nr'; shift;;
 		--) shift; break;;
 		*) echo "Unknown option: $1"; return;;
 		esac
@@ -681,21 +651,85 @@ mr_log() {
 		[ -z "$MR_REPO_EXT" ] && echo "No MR_REPO_EXT." && return
 	fi
 
-	local sedex="s/^\(.*\/\)\(.*\.\)\{0,1\}\([0-9]\+\)\.$MR_REPO_EXT\t"\
-"/\1\t\3\t/" sortex="-k1 -k2n"
-	local found=$(find -H $paths -regex ".*[./][0-9]+\.$MR_REPO_EXT" \
-		-printf "%p\t%T@\t%p\n" | sed "$sedex" | sort $sortex)
+	local findex="find -H $paths -regex .*[./][0-9]+\.$MR_REPO_EXT"
+	if [ -z "$sort" ]; then
+		findex+=" -printf \"%p\t%p\n\" | sed \
+\"s/^\(.*\/\)\(.*\.\)\{0,1\}\([0-9]\+\)\.$MR_REPO_EXT\t/\1\t\3\t/\" \
+			| sort -k1 -k2n"
+	fi
+	local found=$(eval $findex) lines='' path dpath; dv findex found
+	local awkex='BEGIN { FS="<nF>" }
+/./ {
+	if (length(fr) != 0) { if ($1 < fr) next }
+	if (length(to) != 0) { if ($1 > to) next }
+	msg = $0; gsub(/^[0-9]+<nF>/, "", msg)
+	if (p == "false") {
+		head = $1
+		if (length(r) != 0) { head = head"<nF>"r }
+		print head"<nF>"NR"<nF>"msg
+		next
+	}
+	if(v == "true") {
+		dt = strftime("[%Y-%m-%d (ww%U.%w) %H:%M:%S]", $1)
+		gsub(/<ED><nL>.*/, "...", msg)
+		gsub(/<nL>/,"\n",msg)
+		sep = "\n";
+	} else {
+		dt = strftime("%m/%d %H:%M", $1)
+		gsub(/<nL>.*/,"...",msg)
+		gsub(/<mt.*>/,"",msg)
+		sep = " "
+	}
+	if(n == "true") {
+		if (length(r) == 0) h = dt" "NR # h=head
+		else h = dt" "r" "NR
+	} else {
+		if (length(r) == 0) h = "\033[0;32m"dt" \033[0;33m"NR"\033[0m"
+		else h = "\033[0;32m"dt" \033[0;35m"r" \033[0;33m"NR"\033[0m"
+	}
+	print h""sep""msg;
+}'
 	while IFS='' read -r line || [ -n "$line" ]; do
-		IFS=$'\t' read -r -a array <<< "$line"; dv line
-		local path=''
-		if [ $only = false ]; then
-			path=$(norm_path ${array[3]})
-		elif [ -d "$first" ]; then
-			path=$(realpath --relative-to="$first" "${array[3]}")
+		[ -z "$line" ] && continue
+		if [ -z "$sort" ]; then
+			IFS=$'\t' read -r -a fields <<< "$line"; dv line
+			path="${fields[2]}"
+		else
+			path="$line"
 		fi
-		path=${path%.$MR_REPO_EXT}
-		mr_log_file ${array[3]} "$fr" "$to" true "$path" $v $n
+		if [ $only = true ] && [ -d "$first" ]; then
+			dpath=$(realpath --relative-to="$first" "$path")
+		else
+			dpath=$(norm_path "$path")
+		fi
+		dpath=${dpath%.$MR_REPO_EXT}
+		[ -z "$sort" ] && awk -v fr=$fr -v to=$to -v p=true \
+			-v r=$dpath -v v=$v -v n=$n "$awkex" "$path" \
+			|| lines+=$(awk -v fr=$fr -v to=$to -v p=false \
+			-v r=$dpath "$awkex" "$path")$'\n'
 	done <<< "$found"
+	[ -z "$sort" ] && return; dv lines reverse
+	awk -v v=$v -v n=$n 'BEGIN { FS="<nF>" }
+/./ {
+	path = $2; ln = $3; msg = $4
+	if(v == "true") {
+		date = strftime("[%Y-%m-%d (ww%U.%w) %H:%M:%S]", $1)
+		gsub(/<ED><nL>.*/, "...", msg)
+		gsub(/<nL>/, "\n", msg)
+		sep = "\n"
+	} else {
+		date = strftime("%m/%d %H:%M", $1)
+		gsub(/<nL>.*/, "...", msg)
+		gsub(/<mt.*>/, "", msg)
+		sep = " "
+	}
+	if(n == "true")
+		head = date" "path" #"ln" "msg
+	else {
+		head = "\033[0;32m"date" \033[0;35m"path" \033[0;33m"ln"\033[0m"
+	}
+	print head""sep""msg
+}' <<< $(sort -t '<' $sort <<< "$lines")
 }
 #=== LIST ======================================================================
 usage_list() {
