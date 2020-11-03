@@ -663,13 +663,8 @@ mr_log() {
 	if (length(fr) != 0) { if ($1 < fr) next }
 	if (length(to) != 0) { if ($1 > to) next }
 	msg = $0; gsub(/^[0-9]+<nF>/, "", msg)
-	if (p == "false") {
-		head = $1
-		if (length(r) != 0) { head = head"<nF>"r }
-		print head"<nF>"NR"<nF>"msg
-		next
-	}
-	if(v == "true") {
+	if (p == "false") { print $1"<nF>"dpath"<nF>"NR"<nF>"msg; next }
+	if (v == "true") {
 		dt = strftime("[%Y-%m-%d (ww%U.%w) %H:%M:%S]", $1)
 		gsub(/<ED><nL>.*/, "...", msg)
 		gsub(/<nL>/,"\n",msg)
@@ -680,14 +675,14 @@ mr_log() {
 		gsub(/<mt.*>/,"",msg)
 		sep = " "
 	}
-	if(n == "true") {
-		if (length(r) == 0) h = dt" "NR # h=head
-		else h = dt" "r" "NR
-	} else {
-		if (length(r) == 0) h = "\033[0;32m"dt" \033[0;33m"NR"\033[0m"
-		else h = "\033[0;32m"dt" \033[0;35m"r" \033[0;33m"NR"\033[0m"
+	if (n == "true") head = dt" #"NR
+	else head = "\033[0;32m"dt" \033[0;33m"NR"\033[0m"
+	if (length(dpath) != 0) {
+		if (n == "true" ) print "File: "dpath
+		else print "File: \033[0;35m"dpath"\033[0m"
+		dpath = ""
 	}
-	print h""sep""msg;
+	print head""sep""msg;
 }'
 	while IFS='' read -r line || [ -n "$line" ]; do
 		[ -z "$line" ] && continue
@@ -704,9 +699,9 @@ mr_log() {
 		fi
 		dpath=${dpath%.$MR_REPO_EXT}
 		[ -z "$sort" ] && awk -v fr=$fr -v to=$to -v p=true \
-			-v r=$dpath -v v=$v -v n=$n "$awkex" "$path" \
+			-v dpath=$dpath -v v=$v -v n=$n "$awkex" "$path" \
 			|| lines+=$(awk -v fr=$fr -v to=$to -v p=false \
-			-v r=$dpath "$awkex" "$path")$'\n'
+			-v dpath=$dpath "$awkex" "$path")$'\n'
 	done <<< "$found"
 	[ -z "$sort" ] && return; dv lines reverse
 	awk -v v=$v -v n=$n 'BEGIN { FS="<nF>" }
