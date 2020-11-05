@@ -38,6 +38,11 @@ done
 [ $# -gt 1 ] && echo "Support only 1 file directory." && return
 [ ! -d "$1" ] && echo "$1 is not a valid directory." && return
 
+p2r "$1"
+[ -z "$mrREPO" ] && echo "$1 is not in a repo." && return
+eval $(grep 'MR_REPO_EXT=' "$mrREPO/.mrc")
+[ -z "$MR_REPO_EXT" ] && echo "No MR_REPO_EXT." && return
+
 report_dir() { # $1=root $2=dir $3=fr $4=to
 	local head="== ${2#$1/}" grepres NAME=''
 	if [ -f "$2/.mrd" ]; then
@@ -48,7 +53,7 @@ report_dir() { # $1=root $2=dir $3=fr $4=to
 		fi
 	fi
 
-	local sedex="s/^\(.*\.\)\?\([0-9]\+\)\.mr\t/\2\t/"
+	local sedex="s/^\(.*\.\)\?\([0-9]\+\)\.$MR_REPO_EXT\t/\2\t/"
 	local files=$(find -H "$2" -maxdepth 1 -type f -name "*.mr" \
 		-printf "%f\t%p\n" | sed "$sedex" | sort -k1n); dv files
 	while IFS='' read -r line || [ -n "$line" ]; do
