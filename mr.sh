@@ -807,7 +807,7 @@ mr_list() {
 	*) echo "Unknown sort key word: $2"; return;;
 	esac; 
 
-	local findex="find -H $paths -regex .*[./][0-9]+\.$MR_REPO_EXT"
+	local findex="find -H $paths $depth -regex .*[./][0-9]+\.$MR_REPO_EXT"
 	[ -n "$printfex" ] && findex+=" -printf \"$printfex\""
 	[ -n "$sedex" ] && findex+=" | sed \"$sedex\""
 	[ -n "$sortex" ] && findex+=" | sort $sortex"
