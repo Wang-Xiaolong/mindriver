@@ -10,7 +10,7 @@ Generate report from the files in the specified DIRECTORY.
 
 PARAMS=$(getopt -o d: -l date: -n 'mr_report' -- "$@")
 [ $? -ne 0 ] && echo "Failed parsing the arguments." && return
-eval set -- "$PARAMS"; debug "mr_log($@)"
+eval set -- "$PARAMS"; debug "mr_report($@)"
 fr='' to=''
 while : ; do
 	case "$1" in
@@ -48,9 +48,9 @@ report_dir() { # $1=root $2=dir $3=fr $4=to
 		fi
 	fi
 
-	local sedex='s/^\(.*\.\)\?\([0-9]\+\)\.mr/\2/'
+	local sedex="s/^\(.*\.\)\?\([0-9]\+\)\.mr\t/\2\t/"
 	local files=$(find -H "$2" -maxdepth 1 -type f -name "*.mr" \
-		-printf "%f\t%p\n" | sed "$sedex" | sort -k1n)
+		-printf "%f\t%p\n" | sed "$sedex" | sort -k1n); dv files
 	while IFS='' read -r line || [ -n "$line" ]; do
 		IFS=$'\t' read -r -a fields <<< "$line"
 		local output=$(awk -v fr=$3 -v to=$4 '
