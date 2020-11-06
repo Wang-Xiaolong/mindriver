@@ -670,7 +670,10 @@ mr_log() {
 		gsub(/<nL>/,"\n",msg)
 		sep = "\n";
 	} else {
-		dt = strftime("%m/%d %H:%M", $1)
+		if (systime() - $1 > 180*24*60*60)
+			dt = strftime("%Y/%m/%d", $1)
+		else
+			dt = strftime("%m/%d %H:%M", $1)
 		gsub(/<nL>.*/,"...",msg)
 		gsub(/<mt.*>/,"",msg)
 		sep = " "
@@ -713,7 +716,10 @@ mr_log() {
 		gsub(/<nL>/, "\n", msg)
 		sep = "\n"
 	} else {
-		date = strftime("%m/%d %H:%M", $1)
+		if (systime() - $1 > 180*24*60*60)
+			date = strftime("%Y/$%m/%d", $1)
+		else
+			date = strftime("%m/%d %H:%M", $1)
 		gsub(/<nL>.*/, "...", msg)
 		gsub(/<mt.*>/, "", msg)
 		sep = " "
@@ -835,7 +841,10 @@ END {
 		gsub(/<nL>/, "\n", lm)
 		sep = "\n"
 	} else {
-		lt = strftime("%m/%d %H:%M", lt)
+		if (systime() - lt > 180*24*60*60)
+			lt = strftime("%y/%m/%d", lt)
+		else
+			lt = strftime("%m/%d %H:%M", lt)
 		gsub(/<nL>.*/, "...", lm)
 		gsub(/<mt.*>/, "", lm)
 		sep = " "
@@ -878,7 +887,10 @@ END {
 		gsub(/<nL>/, "\n", lm)
 		sep = "\n"
 	} else {
-		lt = strftime("%m/%d %H:%M", $1)
+		if (systime() - $1 > 180*24*60*60)
+			lt = strftime("%Y/%m/%d", $1)
+		else
+			lt = strftime("%m/%d %H:%M", $1)
 		gsub(/<nL>.*/, "...", lm)
 		gsub(/<mt.*>/, "", lm)
 		sep = " "
