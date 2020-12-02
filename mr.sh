@@ -521,6 +521,52 @@ mr_edit() {
 	[ -n "$date" ] && mrLOG=$(set_date $date)
 	update_log "$mr_file" $ln
 }
+#=== REMOVE ====================================================================
+usage_remove() {
+	cat<<-EOF
+Usage: mr remove [OPTION]... LN...
+Remove log(s) specified by LN(s).
+
+Arguments:
+  -f, --file=FILE
+	EOF
+}
+
+mr_remove() {
+	PARAMS=$(getopt -o f: -l file: -n 'mr_remove' -- "$@")
+	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
+	eval set -- "$PARAMS"; debug "mr_move($@)"
+	local mr_file=$MR_FILE
+	while : ; do
+		case "$1" in
+		-f|--file) a2f "$2"; [ $? -ne 0 ] && echo "$2 not found." \
+			&& return; mr_file="$mrFILE"; shift 2;;
+		--) shift; break;;
+		*) echo "Unknown option: $1"; return;;
+		esac
+	done
+	[ -z "$mr_file" ] && echo "No file specified." && return
+	[ $? -eq 0 ] && echo "No log specified." && return 
+	echo "These logs will be removed:"
+	local d_sed='' sep=''
+	for ln in "$@"; do
+		dv ln
+		local nr_awk=$(echo $ln | sed 's/\([0-9]\+\)/NR==\1/g')
+		local dump_awk='BEGIN { FS="<nF>" }'" $nr_awk"'{
+	dt = strftime("%m/%d %H:%M", $1);
+	msg = $2
+	gsub(/<nL>.*/,"...",msg);
+	gsub(/<mt.*>/,"",msg);
+	print "\033[0;32m"dt" \033[0;33m"NR"\033[0m\t"msg;}'
+		dv dump_awk
+		awk "$dump_awk" "$mr_file"
+		d_sed+="$sep${ln}d"
+		sep="; "
+	done; dv p_sed
+	read -p "OK(y/n)? " -n 1 -r
+	[[ ! $REPLY =~ ^[Yy]$ ]] && echo && return; echo
+	sed -i "$d_sed" "$mr_file"
+}
 #=== MOVE ======================================================================
 usage_move() {
 	cat<<-EOF
@@ -938,6 +984,7 @@ a|add) shift; [ "$help" = true ] && usage_add || mr_add "$@";;
 alias) shift; [ "$help" = true ] && usage_alias || mr_alias "$@";;
 v|view) shift; [ "$help" = true ] && usage_view || mr_view "$@";;
 e|ed|edit) shift; [ "$help" = true ] && usage_edit || mr_edit "$@";;
+r|rm|remove) shift; [ "$help" = true ] && usage_remove || mr_remove "$@";;
 m|mv|move) shift; [ "$help" = true ] && usage_move || mr_move "$@";;
 l|log) shift; [ "$help" = true ] && usage_log || mr_log "$@";;
 ls|list) shift; [ "$help" = true ] && usage_list || mr_list "$@";;
