@@ -43,6 +43,7 @@ p2r "$1"
 eval $(grep 'MR_REPO_EXT=' "$mrREPO/.mrc")
 [ -z "$MR_REPO_EXT" ] && echo "No MR_REPO_EXT." && return
 
+declare -a dir_stack=()
 report_dir() { # $1=root $2=dir $3=fr $4=to
 	local head="== ${2#$1/}" grepres NAME=''
 	if [ -f "$2/.mrd" ]; then
@@ -52,6 +53,8 @@ report_dir() { # $1=root $2=dir $3=fr $4=to
 			[ -n "$NAME" ] && head="== $NAME"
 		fi
 	fi
+	dir_stack[${#dir_stack[*]}]="$head" #push head into stack
+	debug "dir_stack(after push)=${dir_stack[@]}"
 
 	local sedex="s/^\(.*\.\)\?\([0-9]\+\)\.$MR_REPO_EXT\t/\2\t/"
 	local files=$(find -H "$2" -maxdepth 1 -type f -name "*.mr" \
@@ -80,7 +83,12 @@ BEGIN { FS="<nF>"; all_text="" }
 }
 END { if (all_text != "") { print "-- "title"\n"all_text }}' "${fields[1]}")
 		[ -z "$output" ] && continue
-		[ -n "$head" ] && echo "$head" && head=''
+		if [ ${#dir_stack[@]} -gt 0 ]; then
+			for item in "${dir_stack[@]}"; do
+				echo "$item"
+			done
+			dir_stack=()
+		fi
 		echo "$output"
 	done <<< "$files"
 	local dir dirs=''
@@ -99,13 +107,18 @@ END { if (all_text != "") { print "-- "title"\n"all_text }}' "${fields[1]}")
 		fi
 		dirs+="$(basename $dir)"$'\t'"$dir"$'\n'
 	done; dv dirs
-	[ -z "$dirs" ] && return
-	dirs=$(echo "$dirs" | sort -k1); dv dirs
-	while IFS='' read -r line || [ -n "$line" ]; do
-		[ -z "$line" ] && continue
-		IFS=$'\t' read -r -a fields <<< "$line"
-		debug "fields=(${fields[0]}, ${fields[1]})"
-		report_dir "$1" "${fields[1]}" "$3" "$4"
-	done <<< "$dirs"
+	if [ -n "$dirs" ]; then
+		dirs=$(echo "$dirs" | sort -k1); dv dirs
+		while IFS='' read -r line || [ -n "$line" ]; do
+			[ -z "$line" ] && continue
+			IFS=$'\t' read -r -a fields <<< "$line"
+			debug "fields=(${fields[0]}, ${fields[1]})"
+			report_dir "$1" "${fields[1]}" "$3" "$4"
+		done <<< "$dirs"
+	fi
+	if [ ${#dir_stack[@]} -gt 0 ]; then
+		debug "dir_stack(before pop)=${dir_stack[@]}"
+		unset dir_stack[${#dir_stack[@]}-1] #pop dir_stack
+	fi
 }
 report_dir "$1" "$1" "$fr" "$to"
