@@ -45,13 +45,17 @@ eval $(grep 'MR_REPO_EXT=' "$mrREPO/.mrc")
 
 declare -a dir_stack=()
 report_dir() { # $1=root $2=dir $3=fr $4=to
-	local head="== ${2#$1/}" grepres NAME=''
+	local grepres NAME="${2#$1/}" head=''
 	if [ -f "$2/.mrd" ]; then
 		grepres=$(grep "NAME=" "$2/.mrd")
-		if [ -n "$grepres" ]; then
-			eval "$grepres"
-			[ -n "$NAME" ] && head="== $NAME"
-		fi
+		[ -n "$grepres" ] && eval "$grepres"
+	fi
+	if [ "$1" = "$2" ]; then
+		[ -n $3 ] && head="$(date -d @$3 +%F)."
+		[ -n $4 ] && head="$head.$(date -d @$4 +%F)"
+		head="$NAME $head<mt^>"$'\n'
+	else
+		head="== $NAME"
 	fi
 	dir_stack[${#dir_stack[*]}]="$head" #push head into stack
 	debug "dir_stack(after push)=${dir_stack[@]}"
