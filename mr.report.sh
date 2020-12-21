@@ -76,7 +76,7 @@ BEGIN { FS="<nF>"; all_text="" }
 	gsub(/<nL>.*/, "", title)
 
 	if ($2 !~ /<FN>.*/) {
-		date = strftime("##%m/%d", $1)
+		date = strftime("<#%m/%d>", $1)
 		if (length(fr) != 0) { if ($1 < fr) next }
 		if (length(to) != 0) { if ($1 > to) next }
 		text = $2
