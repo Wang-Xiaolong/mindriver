@@ -230,6 +230,29 @@ mr_init() {
 	if [ -n "$mrREPO" ]; then
 		echo "$dir is already in a repo($mrREPO)."
 		cat "$mrREPO/.mrc"
+		eval $(grep 'MR_REPO_EXT=' "$mrREPO/.mrc");
+		if [ -n "$MR_REPO_EXT" ]; then
+			local ids=$(find -H "$mrREPO" -type f -regex \
+				".*[./][0-9]+\.$MR_REPO_EXT" -printf "%f\n" \
+				| grep -o "[0-9]\+\.$MR_REPO_EXT" \
+				| sed "s/.$MR_REPO_EXT//" | sort -n )
+			printf "IDs Occupied: "; local prev=-2 single=true
+			while IFS= read -r id; do
+				if [ $id -ne $(($prev + 1)) ]; then
+					if [ $prev -lt 0 ]; then
+						printf "$id"
+					elif [ $single = true ]; then
+						printf " $id"
+					else
+						printf "..$prev $id"
+					fi
+					single=true
+				else
+					single=false
+				fi
+				prev=$id
+			done <<< "$ids"; printf "..$prev"$'\n'
+		fi
 		[ -z "$name$owner$email$ext$temp" ] && return
 		read -p "Configure the repo with your values(y/n)? " -n 1 -r
 		[[ ! $REPLY =~ ^[Yy]$ ]] && echo && return; echo
