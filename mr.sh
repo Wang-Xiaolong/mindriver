@@ -786,7 +786,7 @@ mr_log() {
 		sep = "\n"
 	} else {
 		if (systime() - $1 > 180*24*60*60)
-			date = strftime("%Y/$%m/%d", $1)
+			date = strftime("%Y/%m/%d", $1)
 		else
 			date = strftime("%m/%d %H:%M", $1)
 		gsub(/<nL>.*/, "...", msg)
