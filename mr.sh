@@ -449,10 +449,12 @@ mr_alias() {
 #=== CAT =======================================================================
 usage_cat() {
 	cat<<-EOF
-Usage: $(basename ${BASH_SOURCE[0]}) view [OPTION]... [ROW]...
+Usage: $(basename ${BASH_SOURCE[0]}) cat [OPTION]... MSG_ID...
+Concatenate message(s) specified by MSG_ID(s) to standard output.
 Arguments:
-  -f, --file=FILE
-  -l, --linenum
+  -f, --file=FILE  Specify the thread FILE.
+  -m, --mono       Don't color the head line.
+  -n, --number     Show line number before each line.
 	EOF
 }
 
