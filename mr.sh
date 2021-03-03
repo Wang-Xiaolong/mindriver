@@ -446,8 +446,8 @@ mr_alias() {
 		echo "Too many arguments for alias command."
 	fi
 }
-#=== VIEW ======================================================================
-usage_view() {
+#=== CAT =======================================================================
+usage_cat() {
 	cat<<-EOF
 Usage: $(basename ${BASH_SOURCE[0]}) view [OPTION]... [ROW]...
 Arguments:
@@ -456,10 +456,10 @@ Arguments:
 	EOF
 }
 
-mr_view() {
-	PARAMS=$(getopt -o f:mn -l file:,mono,number -n 'mr_view' -- "$@")
+mr_cat() {
+	PARAMS=$(getopt -o f:mn -l file:,mono,number -n 'mr_cat' -- "$@")
 	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
-	eval set -- "$PARAMS"; debug "mr_view($@)"
+	eval set -- "$PARAMS"; debug "mr_cat($@)"
 	local mr_file=$MR_FILE mono=false num=false
 	while : ; do
 		case "$1" in
@@ -1005,7 +1005,7 @@ ps1) mr_ps1;;
 init) shift; [ "$help" = true ] && usage_init || mr_init "$@";;
 a|add) shift; [ "$help" = true ] && usage_add || mr_add "$@";;
 as|alias) shift; [ "$help" = true ] && usage_alias || mr_alias "$@";;
-v|view) shift; [ "$help" = true ] && usage_view || mr_view "$@";;
+c|cat) shift; [ "$help" = true ] && usage_cat || mr_cat "$@";;
 e|ed|edit) shift; [ "$help" = true ] && usage_edit || mr_edit "$@";;
 r|rm|remove) shift; [ "$help" = true ] && usage_remove || mr_remove "$@";;
 m|mv|move) shift; [ "$help" = true ] && usage_move || mr_move "$@";;
