@@ -1004,7 +1004,7 @@ case "$1" in  # Command
 ps1) mr_ps1;;
 init) shift; [ "$help" = true ] && usage_init || mr_init "$@";;
 a|add) shift; [ "$help" = true ] && usage_add || mr_add "$@";;
-alias) shift; [ "$help" = true ] && usage_alias || mr_alias "$@";;
+as|alias) shift; [ "$help" = true ] && usage_alias || mr_alias "$@";;
 v|view) shift; [ "$help" = true ] && usage_view || mr_view "$@";;
 e|ed|edit) shift; [ "$help" = true ] && usage_edit || mr_edit "$@";;
 r|rm|remove) shift; [ "$help" = true ] && usage_remove || mr_remove "$@";;
