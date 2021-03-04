@@ -496,17 +496,19 @@ mr_cat() {
 #=== EDIT ======================================================================
 usage_edit() {
 	cat<<-EOF
-Usage: $(basename ${BASH_SOURCE[0]}) edit [OPTION]... MSG_ID [EXPRESSION]...
+Usage: $(basename ${BASH_SOURCE[0]}) edit [OPTION]... MSG_ID
 Edit a message in a thread, specialized by the MSG_ID.
-  -f, --file  Sepcify the thread file.
+  -f, --file=FILE  Specify the thread FILE.
+  -d, --date=DATE  Modify the DATE of the message.
+  -s, --sed=EXPR   Modify the mmessage with sed using the EXPRession.
 	EOF
 }
 
 mr_edit() {
-	PARAMS=$(getopt -o f:d: -l file:date: -n 'mr_edit' -- "$@")
+	PARAMS=$(getopt -o f:d:s: -l file:date:sed: -n 'mr_edit' -- "$@")
 	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
 	eval set -- "$PARAMS"; debug "mr_edit($@)"
-	local mr_file=$MR_FILE date=''
+	local mr_file=$MR_FILE date='' exp='' ln=''
 	while : ; do
 		case "$1" in
 		-f|--file) a2f "$2"; [ $? -ne 0 ] && echo "$2 not found." \
@@ -514,24 +516,20 @@ mr_edit() {
 		-d|--date) date="$2"; shift 2; dv date
 			date=$(date -d "$date" '+%s')
 			[ $? -ne 0 ] && return;;
+		-s|--sed) exp="$exp"$'\n'"$2"; shift 2; dv exp;;
 		--) shift; break;;
 		*) echo "Unknown option: $1"; return;;
 		esac
 	done
 	[ ! -f "$mr_file" ] && echo "$mr_file doesn't exist." && return
 	[ -z "$1" ] && echo "No log# specified!" && return
-	local ln=$1; shift; dv ln
-	local exps="$*"; dv exps
+	ln="$1"
 
 	get_log "$mr_file" $ln
 	[ $? -ne 0 ] && return; dv mrLOG
 	local msg=$(get_msg); dv msg
 
-	if [ -n "$exps" ]; then
-		local exp=""
-		for arg in "$@"; do
-			exp="$exp"$'\n'"$arg"
-		done; dv exp
+	if [ -n "$exp" ]; then
 		mrMSG=$(sed -e "$exp" <<< $msg)
 		[ $? -ne 0 ] && return
 		echo "The result log would be:"; echo "$mrMSG"
