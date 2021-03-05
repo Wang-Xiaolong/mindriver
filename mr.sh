@@ -501,13 +501,15 @@ Edit a message in a thread, specialized by the MSG_ID.
   -d, --date=DATE  Modify the DATE of the message.
   -s, --sed=EXPR   Modify the mmessage with sed using the EXPRession.
                    Allow specifying multiple expressions with multiple option.
+  -q, --quiet      Don't ask for user confirmation when -s/-sed specified.
 	EOF
 }
 mr_edit() {
-	PARAMS=$(getopt -o f:d:s: -l file:date:sed: -n 'mr_edit' -- "$@")
+	PARAMS=$(getopt -o f:d:s:q -l file:,date:,sed:,quiet \
+		-n 'mr_edit' -- "$@")
 	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
 	eval set -- "$PARAMS"; debug "mr_edit($@)"
-	local mr_file=$MR_FILE date='' exp='' ln=''
+	local mr_file=$MR_FILE date='' exp='' ln='' quiet=false
 	while : ; do
 		case "$1" in
 		-f|--file) a2f "$2"; [ $? -ne 0 ] && echo "$2 not found." \
@@ -516,6 +518,7 @@ mr_edit() {
 			date=$(date -d "$date" '+%s')
 			[ $? -ne 0 ] && return;;
 		-s|--sed) exp="$exp"$'\n'"$2"; shift 2; dv exp;;
+		-q|--quiet) quiet=true; shift;;
 		--) shift; break;;
 		*) echo "Unknown option: $1"; return;;
 		esac
@@ -535,9 +538,11 @@ mr_edit() {
 	elif [ -n "$exp" ]; then
 		mrMSG=$(sed -e "$exp" <<< $msg)
 		[ $? -ne 0 ] && return
-		echo "The result log would be:"; echo "$mrMSG"
-		read -p "OK(y/n)? " -n 1 -r
-		[[ ! $REPLY =~ ^[Yy]$ ]] && echo && return; echo
+		if [ $quiet = false ]; then
+			echo "The result log would be:"; echo "$mrMSG"
+			read -p "OK(y/n)? " -n 1 -r
+			[[ ! $REPLY =~ ^[Yy]$ ]] && echo && return; echo
+		fi
 		mrLOG=$(set_msg); dv mrLOG
 	fi
 	[ -n "$date" ] && mrLOG=$(set_date $date)
