@@ -500,6 +500,7 @@ Edit a message in a thread, specialized by the MSG_ID.
   -f, --file=FILE  Specify the thread FILE.
   -d, --date=DATE  Modify the DATE of the message.
   -s, --sed=EXPR   Modify the mmessage with sed using the EXPRession.
+                   Allow specifying multiple expressions with multiple option.
 	EOF
 }
 mr_edit() {
