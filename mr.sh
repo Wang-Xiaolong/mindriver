@@ -457,7 +457,6 @@ Arguments:
   -n, --number     Show line number before each line.
 	EOF
 }
-
 mr_cat() {
 	PARAMS=$(getopt -o f:mn -l file:,mono,number -n 'mr_cat' -- "$@")
 	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
@@ -503,7 +502,6 @@ Edit a message in a thread, specialized by the MSG_ID.
   -s, --sed=EXPR   Modify the mmessage with sed using the EXPRession.
 	EOF
 }
-
 mr_edit() {
 	PARAMS=$(getopt -o f:d:s: -l file:date:sed: -n 'mr_edit' -- "$@")
 	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
@@ -554,7 +552,6 @@ Arguments:
   -f, --file=FILE
 	EOF
 }
-
 mr_remove() {
 	PARAMS=$(getopt -o f: -l file: -n 'mr_remove' -- "$@")
 	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
@@ -600,7 +597,6 @@ Arguments:
   -f, --file=FILE
 	EOF
 }
-
 mr_move() {
 	PARAMS=$(getopt -o f: -l file: -n 'mr_move' -- "$@")
 	[ $? -ne 0 ] && echo "Failed parsing the arguments." && return
@@ -817,7 +813,6 @@ OPTIONs:
   -v, --verbose		display verbose result.
 	EOF
 }
-
 mr_list() {
 	PARAMS=$(getopt -o nvd:s:rR \
 		-l mono,verbose,date:,sort:,reverse,recursive \
