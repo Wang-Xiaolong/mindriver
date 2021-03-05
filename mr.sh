@@ -528,16 +528,16 @@ mr_edit() {
 	[ $? -ne 0 ] && return; dv mrLOG
 	local msg=$(get_msg); dv msg
 
-	if [ -n "$exp" ]; then
+	if [ -z "$exp" ] && [ -z "$date" ]; then
+		edit_msg "$msg" "$mr_file" #->mrMSG
+		[ $? -ne 0 ] && return; dv mrMSG
+		mrLOG=$(set_msg); dv mrLOG
+	elif [ -n "$exp" ]; then
 		mrMSG=$(sed -e "$exp" <<< $msg)
 		[ $? -ne 0 ] && return
 		echo "The result log would be:"; echo "$mrMSG"
 		read -p "OK(y/n)? " -n 1 -r
 		[[ ! $REPLY =~ ^[Yy]$ ]] && echo && return; echo
-		mrLOG=$(set_msg); dv mrLOG
-	elif [ -z "$date" ]; then
-		edit_msg "$msg" "$mr_file" #->mrMSG
-		[ $? -ne 0 ] && return; dv mrMSG
 		mrLOG=$(set_msg); dv mrLOG
 	fi
 	[ -n "$date" ] && mrLOG=$(set_date $date)
