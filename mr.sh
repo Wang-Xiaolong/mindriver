@@ -535,7 +535,6 @@ mr_edit() {
 	if [ -z "$exp" ] && [ -z "$date" ]; then
 		edit_msg "$msg" "$mr_file" #->mrMSG
 		[ $? -ne 0 ] && return; dv mrMSG
-		mrLOG=$(set_msg); dv mrLOG
 	elif [ -n "$exp" ]; then
 		mrMSG=$(sed -e "$exp" <<< $msg)
 		[ $? -ne 0 ] && return
@@ -544,8 +543,8 @@ mr_edit() {
 			read -p "OK(y/n)? " -n 1 -r
 			[[ ! $REPLY =~ ^[Yy]$ ]] && echo && return; echo
 		fi
-		mrLOG=$(set_msg); dv mrLOG
 	fi
+	mrLOG=$(set_msg); dv mrLOG
 	[ -n "$date" ] && mrLOG=$(set_date $date)
 	update_log "$mr_file" $ln
 }
