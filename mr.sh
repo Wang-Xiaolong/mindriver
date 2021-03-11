@@ -383,6 +383,7 @@ mr_add() {
 		[ $? -ne 0 ] && return; dv mrMSG
 		message=$mrMSG
 	fi
+	message=$(sed -e 's/[[:space:]]*$//' <<< $message)
 	if [ -z $(echo $message | tr -d '[:space:]') ]; then # empty?
 		echo "Empty message, cancel."
 	elif [ -z "$append" ]; then
