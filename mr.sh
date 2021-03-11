@@ -544,6 +544,7 @@ mr_edit() {
 			[[ ! $REPLY =~ ^[Yy]$ ]] && echo && return; echo
 		fi
 	fi
+	mrMSG=$(sed -e 's/[[:space:]]*$//' <<< $mrMSG)
 	mrLOG=$(set_msg); dv mrLOG
 	[ -n "$date" ] && mrLOG=$(set_date $date)
 	update_log "$mr_file" $ln
