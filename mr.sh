@@ -45,7 +45,7 @@ a2f() { # arg->file, $1=path|id|alias
 		alias="$base"
 	fi; dvl $LINENO id alias
 	if [ -n "$alias" ]; then
-		re=".*/$alias\.[0-9]+\.$MR_REPO_EXT"
+		re=".*/${alias//./\\.}\.[0-9]+\.$MR_REPO_EXT"
 		found=$(find -H "$mrREPO" -type f -regex "$re")
 	fi
 	if [ "$id" = + ]; then
