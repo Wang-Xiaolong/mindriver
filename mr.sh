@@ -495,7 +495,7 @@ mr_add() { PARAMS=$(getopt -o f:m:e::i:a:b: -l \
 	file:,message:,edit::,into:,after:,before: \
 	-n 'mr_add' -- "$@"); [ $? -ne 0 ] && err "$ERR_ARG" && return
 	eval set -- "$PARAMS"; dargs "$@"
-	local f="$MR_FILE" msg='' e='' edr='' x='' xa=''
+	local f msg e edr x xa
 	local err_multi="Only 1 of i(nto)|a(fter)|b(efore) allowed."
 	while : ; do case "$1" in --) shift; break;;
 		-f|--file) f="$2"; shift 2;;
@@ -512,6 +512,27 @@ mr_add() { PARAMS=$(getopt -o f:m:e::i:a:b: -l \
 	[ -z "$msg" ] && msg="$*"; [ -z "$x" ] && x=f
 	cpu n$e "$msg" "$edr" $x "$f" "$xa"
 }
+#== EDIT a existing note =======================================================
+usage_edit() { cat<<-EOF
+Usage: $(basename ${BASH_SOURCE[0]}) edit [OPTION]... [ADDRESS]
+Update the text of a specified note.
+  -f, --file=<path>   Specify the FILE that the note to edit is in.
+                      If not specified, use MR_FILE.
+  -e, --editor=<cmd>  Call an editor to edit the text of the note.
+                      If no EDITOR specified, use MR_EDITOR, vim, vi or nano.
+	EOF
+}
+mr_edit() { PARAMS=$(getopt -o f:e: -l file:,editor: \
+	-n 'mr_edit' -- "$@"); [ $? -ne 0 ] && err "$ERR_ARG" && return
+	eval set -- "$PARAMS"; dargs "$@"
+	local f edr ad
+	while : ; do case "$1" in --) shift; break;;
+		-f|--file) f="$2"; shift 2;;
+		-e|--editor) edr="$2"; shift 2;;
+		*) err "$ERR_OPT $1"; return;;
+	esac; done; ad="$*"
+	cpu ne '' "$edr" os "$f" "$ad"
+}
 #=== MAIN ======================================================================
 usage() { cat<<-EOF
 mindriver, in which logs float down to the human world.
@@ -523,12 +544,12 @@ Usage:
 The commands are:
   help    Show this document.
   add     Create a new note.
-  rm      Remove one or more notes.
-  cat     View the content of one or more notes.
-  update  Update the content of one or more notes.
-  mv      Move one or more notes to another file or position.
-  ls      List the notes under one or more parent notes.
-  grep    Search pattern in each note or file.
+  remove  Remove one or more notes.
+  print   print the content of one or more notes.
+  edit    Update the content of one or more notes.
+  move    Move one or more notes to another file or position.
+  list    List the notes under one or more parent notes.
+  search  Search pattern in each note or file.
 You can run 'mr <command> <-h|--help|-?>' to get the document of each command.
 	EOF
 }; hlp=''
@@ -541,13 +562,13 @@ esac; done; dargs "$@"
 case "$1" in help) usage;;
 	ps) shift; mr_ps "$@";;
 	cpu) shift; [ -n "$hlp" ] && usage_cpu || cpu "$@";;
-	cat) shift; [ -n "$hlp" ] && usage_cat || mr_cat "$@";;
-	upd) shift; [ -n "$hlp" ] && usage_upd || mr_upd "$@";;
-	add) shift; [ -n "$hlp" ] && usage_add || mr_add "$@";;
-	rm) shift; [ -n "$hlp" ] && usage_rm || mr_rm "$@";;
-	mv) shift; [ -n "$hlp" ] && usage_mv || mr_mv "$@";;
-	ls) shift; [ -n "$hlp" ] && usage_ls || mr_ls "$@";;
-	grep) shift; [ -n "$hlp" ] && usage_grep || mr_grep "$@";;
+	p|pr|print) shift; [ -n "$hlp" ] && usage_print || mr_print "$@";;
+	e|ed|edit) shift; [ -n "$hlp" ] && usage_edit || mr_edit "$@";;
+	a|add) shift; [ -n "$hlp" ] && usage_add || mr_add "$@";;
+	r|rm|remove) shift; [ -n "$hlp" ] && usage_remove || mr_remove "$@";;
+	m|mv|move) shift; [ -n "$hlp" ] && usage_move || mr_move "$@";;
+	l|ls|list) shift; [ -n "$hlp" ] && usage_list || mr_list "$@";;
+	s|search) shift; [ -n "$hlp" ] && usage_search || mr_search "$@";;
 	*) dir=$(dirname ${BASH_SOURCE[0]}) cmd=$1; shift
 		if [ -f "$dir/mr.$cmd.sh" ]; then . "$dir/mr.$cmd.sh" "$@"
 		else err "Incorrect command: $cmd"; usage; fi;;
