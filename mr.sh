@@ -360,7 +360,7 @@ cpu() { dargs "$@"; local sf="$MR_FILE" df="$MR_FILE" di dlv=0
 			if [[ "$1" = a* && -n $(samepath "$sf" "$df") ]]; then
 				i_in_trees $di; [ $? -ne 0 ] && { err \
 				"Can't copy notes to their child."; return 8; }
-			fi
+			fi; dv dlv
 		elif [[ "$1" = n* && ! -f "$df" ]]; then # n+f(new)
 			read -p "$df doesn't exist, create it?(y/n) " -n 1 -r
 			[[ $REPLY =~ ^[Yy]$ ]] && echo || { echo; return 9; }
@@ -406,7 +406,7 @@ cpu() { dargs "$@"; local sf="$MR_FILE" df="$MR_FILE" di dlv=0
 	else # $1=n[e]
 		txtbuf=$(trim_txt "$2")
 		if [[ $4 = o || $4 = os ]]; then
-			local dtxt=$(i2txt "$di" "$5")
+			local dtxt=$(i2txt "$di" "$df")
 			if [[ $4 = os ]]; then
 				[ -z "$txtbuf" ] && txtbuf="$dtxt" || \
 					txtbuf=$(sed -e "$txtbuf" <<< "$dtxt")
@@ -473,7 +473,7 @@ cpu() { dargs "$@"; local sf="$MR_FILE" df="$MR_FILE" di dlv=0
 			dsed="$dsed"$'\n'"1s/^[0-9]\+/$((dnc+ilnc))/";;
 		*) err "Wrong \$4:$4."; return 7;;
 	esac; dt dsed
-	[ -n "$dsed" ] && sed -i -e "$dsed" "$5"
+	[ -n "$dsed" ] && sed -i -e "$dsed" "$df"
 	return 0
 }
 #=== ADD a new note ============================================================
