@@ -533,6 +533,24 @@ mr_edit() { PARAMS=$(getopt -o f:e: -l file:,editor: \
 	esac; done; ad="$*"
 	cpu ne '' "$edr" os "$f" "$ad"
 }
+#=== REMOVE ====================================================================
+usage_remove() { cat<<-EOF
+Usage: $(basename ${BASH_SOURCE[0]}) remove [OPTION]... ID...
+Remove notes.
+  -f, --file=<path>  Specify the FILE that holds the notes to be removed.
+                     If not specified, MR_FILE variable will be used.
+	EOF
+}
+mr_remove() { PARAMS=$(getopt -o f: -l file: -n 'mr_remove' -- "$@")
+	[ $? -ne 0 ] && err "$ERR_ARG" && return
+	eval set -- "$PARAMS"; dargs "$@"
+	local f
+	while : ; do case "$1" in --) shift; break;;
+		-f|--file) f="$2"; shift 2;;
+		*) err "$ERR_OPT $1"; return;;
+	esac; done
+	cpu ar "$f" "$*"
+}
 #=== MAIN ======================================================================
 usage() { cat<<-EOF
 mindriver, in which logs float down to the human world.
