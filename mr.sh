@@ -479,18 +479,16 @@ cpu() { dargs "$@"; local sf="$MR_FILE" df="$MR_FILE" di dlv=0
 #=== ADD a new note ============================================================
 usage_add() { cat<<-EOF
 Usage: $(basename ${BASH_SOURCE[0]}) add [OPTION]... [MESSAGE]
-Add a new note.
+Add a new note to a specified FILE at specified POSITION with specified MESSAGE.
   -f, --file=<path>     Specify the FILE to which the note will be added.
                         If not specified, use MR_FILE.
-  -m, --message=<text>  Specify the MESSAGE of the note. '+' to read stdin.
-  -e, --edit[=cmd]      Call an EDITOR to edit the message of the note.
+  -m, --message=<text>  Specify the MESSAGE of the note.
+  -e, --edit[=cmd]      Call an EDITOR to edit the MESSAGE of the note.
                         If no EDITOR specified, use MR_EDITOR, vim, vi or nano.
-  -i, --into=<id>       Specify the note under which the new one will be added.
-                        To be ignore when BEFORE or AFTER is specified.
-                        By default a new note will be added as the last child
-                        of the initial(or root) note.
-  -a, --after=<id>	Specify the note after which the new one will be added.
-  -b, --before=<id>     Specify the note before which the new one will be added.
+  -i, --into=<adr>      Specify the note under which the new one will be added.
+  -a, --after=<adr>	Specify the note after which the new one will be added.
+  -b, --before=<adr>    Specify the note before which the new one will be added.
+                        Only 1 of i(nto)|a(fter)|b(fore) is allowed.
 	EOF
 }
 mr_add() { PARAMS=$(getopt -o f:m:e::i:a:b: -l \
