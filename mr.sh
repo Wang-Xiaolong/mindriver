@@ -330,34 +330,36 @@ cpu() { dargs "$@"; local sf="$MR_FILE" df="$MR_FILE" di dlv=0
 	# Check $1-4
 	if [[ "$1" =~ ^(ar|acr|ac)$ ]]; then
 		[ -n "$2" ] && sf="$2"
+		[ -z "$sf" ] && { err "Source file not specified."; return 2; }
 		[[ "$sf" != *.mr ]] && sf="$sf.mr"
-		[ ! -f "$sf" ] && { err "$sf is not a file."; return 2; }
-		[ -z "$3" ] && { err "Empty \$3."; return 3; }
+		[ ! -f "$sf" ] && { err "$sf is not a file."; return 3; }
+		[ -z "$3" ] && { err "Empty \$3."; return 4; }
 		adws2trees "$3" "$sf"
-		[ $? -ne 0 ] && { err "adws2trees."; return 4; }
+		[ $? -ne 0 ] && { err "adws2trees."; return 5; }
 		i_in_trees 0; [ $? -ne 0 ] && { err \
-			"Don't move|copy|remove note 0."; return 8; }
+			"Don't move|copy|remove note 0."; return 6; }
 		[[ "$1" = ac* && ! "$4" =~ ^(i|a|b|o|f)$ ]] && {
-			err "Wrong \$4:$4."; return 5; }
+			err "Wrong \$4:$4."; return 7; }
 	elif [[ "$1" =~ ^(n|ne)$ ]]; then
 		[[ ! "$4" =~ ^(i|a|b|o|op|os|f)$ ]] && {
-			err "Wrong \$4:$4."; return 5; }
+			err "Wrong \$4:$4."; return 7; }
 	else err "Unsupported \$1:$1."; return 1; fi
 	# Check $5-6
 	if [[ "$1" =~ ^(ac|acr|n|ne)$ ]]; then
 		[ -n "$5" ] && df="$5"
+		[ -z "$df" ] && { err "Target file not specified."; return 2; }
 		[[ "$df" != *.mr ]] && df="$df.mr"
 		if [[ ${4:0:1} =~ ^(b|a|i|o)$ ]]; then
-			[ ! -f "$df" ] && { err "$df's not a file."; return 6; }
+			[ ! -f "$df" ] && { err "$df's not a file."; return 3; }
 			di=$(ad2i "$6" "$df"); [ $? -ne 0 -o -z "$di" ] && {
 				err "$6's a wrong address."; return 7; }
 			[[ $di = 0 && ! ($1 = n* && $4 = o*) ]] && {
-				err "Don't target note 0."; return 8; }
+				err "Don't target note 0."; return 6; }
 			i2flds "$di" "$df"; dflds=("${mr_flds[@]}")
 			[[ $4 = i ]] && dlv=$((dflds[0]+1)) || dlv=${dflds[0]}
 			if [[ "$1" = a* && -n $(samepath "$sf" "$df") ]]; then
 				i_in_trees $di; [ $? -ne 0 ] && { err \
-				"Can't copy notes to their child."; return 9; }
+				"Can't copy notes to their child."; return 8; }
 			fi
 		elif [[ "$1" = n* && ! -f "$df" ]]; then # n+f(new)
 			read -p "$df doesn't exist, create it?(y/n) " -n 1 -r
@@ -469,10 +471,48 @@ cpu() { dargs "$@"; local sf="$MR_FILE" df="$MR_FILE" di dlv=0
 			dsed="$dsed"$'\n'"1s/^[0-9]\+/$((dnc+ilnc))/";;
 		f) dsed=$((dnc+1))"a $ilnbuf"$'\n'"\$a $txtbuf"
 			dsed="$dsed"$'\n'"1s/^[0-9]\+/$((dnc+ilnc))/";;
-		*) err "Unsupported cpu param $4"; return 1;;
+		*) err "Wrong \$4:$4."; return 7;;
 	esac; dt dsed
 	[ -n "$dsed" ] && sed -i -e "$dsed" "$5"
 	return 0
+}
+#=== ADD a new note ============================================================
+usage_add() { cat<<-EOF
+Usage: $(basename ${BASH_SOURCE[0]}) add [OPTION]... [MESSAGE]
+Add a new note.
+  -f, --file=<path>     Specify the FILE to which the note will be added.
+                        If not specified, use MR_FILE.
+  -m, --message=<text>  Specify the MESSAGE of the note. '+' to read stdin.
+  -e, --edit[=cmd]      Call an EDITOR to edit the message of the note.
+                        If no EDITOR specified, use MR_EDITOR, vim, vi or nano.
+  -i, --into=<id>       Specify the note under which the new one will be added.
+                        To be ignore when BEFORE or AFTER is specified.
+                        By default a new note will be added as the last child
+                        of the initial(or root) note.
+  -a, --after=<id>	Specify the note after which the new one will be added.
+  -b, --before=<id>     Specify the note before which the new one will be added.
+	EOF
+}
+mr_add() { PARAMS=$(getopt -o f:m:e::i:a:b: -l \
+	file:,message:,edit::,into:,after:,before: \
+	-n 'mr_add' -- "$@"); [ $? -ne 0 ] && err "$ERR_ARG" && return
+	eval set -- "$PARAMS"; dargs "$@"
+	local f="$MR_FILE" msg='' e='' edr='' x='' xa=''
+	local err_multi="Only 1 of i(nto)|a(fter)|b(efore) allowed."
+	while : ; do case "$1" in --) shift; break;;
+		-f|--file) f="$2"; shift 2;;
+		-m|--message) msg="$2"; shift 2;;
+		-e|--edit) e=e; edr="$2"; shift 2;;
+		-i|--into) [ -n "$x" ] && { err "$err_multi"; return; }
+			x=i; xa="$2"; shift 2;;
+		-a|--after) [ -n "$x" ] && { err "$err_multi"; return; }
+			x=a; xa="$2"; shift 2;;
+		-b|--before) [ -n "$x" ] && { err "$err_multi"; return; }
+			x=b; xa="$2"; shift 2;;
+		*) err "$ERR_OPT $1"; return;;
+	esac; done
+	[ -z "$msg" ] && msg="$*"; [ -z "$x" ] && x=f
+	cpu n$e "$msg" "$edr" $x "$f" "$xa"
 }
 #=== MAIN ======================================================================
 usage() { cat<<-EOF
