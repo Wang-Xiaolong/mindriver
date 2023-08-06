@@ -551,6 +551,46 @@ mr_remove() { PARAMS=$(getopt -o f: -l file: -n 'mr_remove' -- "$@")
 	esac; done
 	cpu ar "$f" "$*"
 }
+#=== MOVE notes ================================================================
+usage_move() { cat<<-EOF
+Usage: $(basename ${BASH_SOURCE[0]}) move [OPTION]... ADDRESS...
+Move(or copy) note(s) to a new file or position.
+  -f, --from=<path>  Specify the SOURCE file from which the notes will be moved.
+                     If not specified, MR_FILE variable will be used.
+  -t, --to=<path>    Specify the DESTINATION file to which the notes will be
+                     moved. If not specified, MR_FILE variable will be used.
+  -i, --into=<adr>    Specify the note under which the notes will be inserted.
+                     To be ignored when BEFORE or AFTER is specified.
+                     By default a notes will be added at the end of the
+                     DESTINE file.
+  -a, --after=<adr>   Specify the note after which the notes will be inserted.
+  -b, --before=<adr>  Specify the note before which the notes will be inserted.
+  -o, --off=<adr>     Specify the note which the notes will replace.
+  -c, --copy         Just COPY.
+	EOF
+}
+mr_move() { PARAMS=$(getopt -o f:t:i:a:b:o:c -l \
+	from:,to:,into:,after:,before:,off:,copy \
+	-n 'mr_move' -- "$@"); [ $? -ne 0 ] && err "$ERR_ARG" && return
+	eval set -- "$PARAMS"; dargs "$@"
+	local fr to x xa op='acr'
+	local err_multi="Only 1 of i(nto)|a(fter)|b(efore) allowed."
+	while : ; do case "$1" in --) shift; break;;
+		-f|--from) fr="$2"; shift 2;;
+		-t|--to) to="$2"; shift 2;;
+		-i|--into) [ -n "$x" ] && { err "$err_multi"; return; }
+			x=i; xa="$2"; shift 2;;
+		-a|--after) [ -n "$x" ] && { err "$err_multi"; return; }
+			x=a; xa="$2"; shift 2;;
+		-b|--before) [ -n "$x" ] && { err "$err_multi"; return; }
+			x=b; xa="$2"; shift 2;;
+		-o|--off) [ -n "$x" ] && { err "$err_multi"; return; }
+			x=o; xa="$2"; shift 2;;
+		-c|--copy) op='ac'; shift;;
+		*) err "$ERR_OPT $1"; return;;
+	esac; done; [ -z "$x" ] && x=f
+	cpu "$op" "$fr" "$*" $x "$to" "$xa"
+}
 #== PRINT notes ================================================================
 usage_print() { cat<<-EOF
 Usage: $(basename ${BASH_SOURCE[0]}) print [OPTION]... [ADDRESS]...
