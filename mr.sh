@@ -512,7 +512,42 @@ mr_add() { PARAMS=$(getopt -o f:m:e::i:a:b: -l \
 	[ -z "$msg" ] && msg="$*"; [ -z "$x" ] && x=f
 	cpu n$e "$msg" "$edr" $x "$f" "$xa"
 }
-#== EDIT a existing note =======================================================
+#== PRINT notes ================================================================
+usage_print() { cat<<-EOF
+Usage: $(basename ${BASH_SOURCE[0]}) print [OPTION]... [ADDRESS]...
+Print notes specified by ADDRESSes to standard output.
+  -f, --file=<path>  Specify the FILE(MR_FILE by default) that holds the notes.
+  -l, --linenum      Show line number before each line.
+	EOF
+}
+mr_print() { PARAMS=$(getopt -o f:l -l file:,linenum \
+	-n 'mr_print' -- "$@"); [ $? -ne 0 ] && err "$ERR_ARG" && return
+	eval set -- "$PARAMS"; dargs "$@"
+	local file="$MR_FILE" ln
+	while : ; do case "$1" in --) shift; break;;
+		-f|--file) file="$2"; shift 2;;
+		-l|--linenum) ln=ln; shift;;
+		*) err "$ERR_OPT $1"; return;;
+	esac; done
+	[ -z "$file" ] && err "No file specified." && return
+	[[ $file != *.mr ]] && file="$file.mr"
+	[ ! -f "$file" ] && err "$file not exist." && return
+	local nc=$(f2nc "$file"); dbg "$file exist with $nc lines."
+	[ $# -eq 0 ] && err "No address specified." && return
+	iter_adws "$*" "$file" "$nc" print1leaf $ln
+}
+print1leaf() { assert -n $1 -a -f "$2"; i2flds "$1" "$2";
+	local ct=${mr_flds[2]} mt=${mr_flds[4]} dtf="%Y-%m-%d/%H:%M"
+	local d=$(date -d @$(r64x2int "$ct") +"created:$dtf") lc=${mr_flds[1]}
+	[[ ! $mt = $ct ]] && d+=$(date -d @$(r64x2int "$mt") +" modified:$dtf")
+	local bs=$(basename "$2") t=$(i2txt "$1" "$2") len=$(wc -L <<< "$t")
+	printf "\e[0;33m$1/$bs \e[0;32m${lc}l ${len}c $d\e[0m\n"
+	[ -z $4 ] && echo "$t" && return 0
+	local e="\\033[0;33m%-${#lc}s\\033[0m"
+	echo "$t" | awk "{printf \"$e %s\\n\", NR, \$0}"
+	return 0
+} # $1=idx $2=file $3=lc $4=ln
+#== EDIT a note ================================================================
 usage_edit() { cat<<-EOF
 Usage: $(basename ${BASH_SOURCE[0]}) edit [OPTION]... [ADDRESS]
 Update the text of a specified note.
