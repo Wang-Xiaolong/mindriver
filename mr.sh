@@ -626,6 +626,16 @@ print1leaf() { assert -n $1 -a -f "$2"; i2flds "$1" "$2";
 	echo "$t" | awk "{printf \"$e %s\\n\", NR, \$0}"
 	return 0
 } # $1=idx $2=file $3=lc $4=ln
+#=== LIST notes or files =======================================================
+usage_list() { cat<<-EOF
+Usage: $(basename ${BASH_SOURCE[0]}) list [OPTION]... [ADDRESS]...
+List files in a directory, notes in a file or under one or more parent notes.
+  -f, --file[=path]  Specify the FILE(MR_FILE by default) that holds the notes.
+                     If the path is a directory, list the files in it.
+  -t, --tree         List all notes like a tree.
+	EOF
+}
+
 #=== MAIN ======================================================================
 usage() { cat<<-EOF
 mindriver, in which logs float down to the human world.
