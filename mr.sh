@@ -533,11 +533,11 @@ mr_edit() { PARAMS=$(getopt -o f:e: -l file:,editor: \
 	esac; done; ad="$*"
 	cpu ne '' "$edr" os "$f" "$ad"
 }
-#=== REMOVE ====================================================================
+#=== REMOVE notes ==============================================================
 usage_remove() { cat<<-EOF
-Usage: $(basename ${BASH_SOURCE[0]}) remove [OPTION]... ID...
-Remove notes.
-  -f, --file=<path>  Specify the FILE that holds the notes to be removed.
+Usage: $(basename ${BASH_SOURCE[0]}) remove [OPTION]... ADDRESS...
+Remove notes specified by ADDRESSes.
+  -f, --file=<path>  Specify the FILE from which the notes will be removed.
                      If not specified, MR_FILE variable will be used.
 	EOF
 }
