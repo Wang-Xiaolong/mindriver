@@ -261,7 +261,7 @@ iter_adws() { dargs "$@"; assert -n "$1" -a -n "$2" -a -f "$2" -a -n "$4"
 		done
 	done; return 0
 } # $1=adws $2=file $3=nc $4=func(i, file, nc, context...) $5+=context
-adws2trees() {
+adws2trees() { mr_roots=(); mr_tops=()
 	iter_adws "$1" "$2" '' i2trees; return $?
 } # $1=adws $2=file
 iter_trees() { local last=$((${#mr_roots[@]}-1)) func="$1"; shift
