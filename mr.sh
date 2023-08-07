@@ -144,6 +144,11 @@ txt2hl() { dargs "$@"; local hl
 		else break; fi
 	done <<< "$1"; echo "$hl"
 } # hl: head line.
+color() { local s=$(sed 's/\\/\\\\/g;s/%/%%/g' <<< "$1")
+	[ -z "$2" ] && echo "$s" && return
+	[ -z "$3" ] && echo "\e[$2m$s\e[0m" || \
+		sed "s/$3/\\\\e[$2m&\\\\e[0m/g" <<< "$s"
+} # $1=str $2=color $3=pattern
 #== Meta & Alias Functions =====================================================
 ln2meta() { dargs "$@"; mr_as='' mr_tp='' mr_dr=''
 	local RE_DR='^[0-9]{8}(-[0-9]{0,8})?|-$'
@@ -266,13 +271,30 @@ iter_trees() { local last=$((${#mr_roots[@]}-1)) func="$1"; shift
 			return 1; }
 	done
 } # $1=func(from, to, context...) $2+=context
-list_tree() {
-	awk -F'\t' -v fr=$1 -v to=$2 '
-	NR == 1 { nc = $1 }
-	NR > fr && NR <= to + 1 { printf "%s %s %s\n", NR -1, $1, $6 }
-	' "$3"
-} # $1=from $2=to $3=file
-list_trees() { iter_trees list_tree "$1"; } # $1=file
+list_node() { dargs "$@"; local s="$2$3" ind=$1
+	while (($ind>0)); do s="  $s"; let ind=$ind-1; done
+	echo "$s $7"
+} # $1=indent $2=sign $3=i $4=lc $5=ct $6=mt $7=hl $8=v
+list_tree() { dargs "$@"; local i lv rtlv _lv _i ind s lc ct mt hl
+	for i in $(seq $1 $2); do
+		i2flds $i "$3"; lv=${mr_flds[0]}
+		[ -z "$rtlv" ] && rtlv=$lv; dv rtlv lv _lv
+		if [[ $((lv-rtlv)) -gt "$4" ]]; then
+			if [ -n "$_lv" ]; then list_node \
+				$ind '+' $_i $lc $ct $mt "$hl" "$5"
+				_lv=''
+			fi; continue
+		fi
+		if [ -n "$_lv" ]; then
+			[ "$lv" -gt "$_lv" ] && s='-' || s=' '
+			list_node $ind "$s" $_i $lc $ct $mt "$hl" "$5"
+		fi
+		_lv=$lv; _i=$i; ind=$((lv-rtlv)); lc=${mr_flds[1]}
+		ct=${mr_flds[2]}; mt=${mr_flds[4]}; hl=${mr_flds[5]}
+	done; [ -n "$_lv" ] && list_node $ind ' ' $_i $lc $ct $mt "$hl" "$5"
+	return 0
+} # $1=from $2=to $3=file $4=level $5=verbose
+list_trees() { iter_trees list_tree "$1" "$2" "$3"; } # $1=file $2=level $3=v
 ls1leaf() { dargs "$@"
 } # $1=id $2=file $3=level $4=relpath
 trees2seds() { dargs "$@"; local last=$((${#mr_roots[@]}-1)) ised tsed nc=0
@@ -297,8 +319,8 @@ trees2seds() { dargs "$@"; local last=$((${#mr_roots[@]}-1)) ised tsed nc=0
 } # trees->iln_sed & txt_sed & tree_nc. $1=file $2=dlv
 #== HELPER FUNCTIONS ===========================================================
 mr_init() { dargs "$@";	assert ! -f "$1"
-	local bs=$(basename "$1") dt=$(date2r64x)
-	echo -n 0$'\t'1$'\t'$dt$'\t'$(rand64x)$'\t'$dt$'\n'"What's in $bs?" \
+	local bs=$(basename "$1") dt=$(date2r64x); bs="What's in $bs?"
+	echo -n 0$'\t'1$'\t'$dt$'\t'$(rand64x)$'\t'$dt$'\t'"$bs"$'\n'"$bs" \
 		> "$1"; return 0
 } # init a new mr file, $1=path
 edit_txt() {
@@ -632,10 +654,42 @@ Usage: $(basename ${BASH_SOURCE[0]}) list [OPTION]... [ADDRESS]...
 List files in a directory, notes in a file or under one or more parent notes.
   -f, --file[=path]  Specify the FILE(MR_FILE by default) that holds the notes.
                      If the path is a directory, list the files in it.
-  -t, --tree         List all notes like a tree.
+  -l, --level=<int>  Specify the number of levels(1 by default) to be listed.
+  -v, --verbose      Include date and full head line in the list.
 	EOF
 }
-
+mr_list() { PARAMS=$(getopt -o f:l:v -l file:,level:,verbose \
+	-n 'mr_list' -- "$@"); [ $? -ne 0 ] && err "$ERR_ARG" && return
+	eval set -- "$PARAMS"; dargs "$@"
+	local file="$MR_FILE" level=1 adws v
+	while : ; do case "$1" in --) shift; break;;
+		-f|--file) file="$2"; shift 2;;
+		-l|--level) level="$2"; shift 2;;
+		-v|--verbose) v=v; shift;;
+		*) err "$ERR_OPT $1"; return;;
+	esac; done
+	[ -z "$file" ] && err "No file specified." && return
+	[ -d "$file" ] && { mr_list_dir "$file" "$level" "$v"; return; }
+	[[ $file != *.mr ]] && file="$file.mr"
+	[ ! -f "$file" ] && err "$file not exist." && return
+	local nc=$(f2nc "$file"); dbg "$file exist with $nc lines."
+	[ -z "$*" ] && adws="1,$nc" || adws="$*"
+	mr_list_adws "$adws" "$file" "$nc" "$level"
+}
+mr_list_dir() { dargs "$@"
+	local files=$(find "$1" -name '*.mr') f r nc
+	for f in $files; do
+		r=$(realpath --relative-to="$1" "$f"); r=${r%.mr}
+		i2flds 0 "$f"
+		printf "\e[0;33m$r\e[0m ${mr_flds[5]}\n"
+		nc=$(f2nc "$f")
+		mr_list_adws "1,$nc" "$f" "$nc" "$(($2-1))"
+	done
+} # $1=dir $2=level $3=verbose
+mr_list_adws() { dargs "$@"
+	adws2trees "$1" "$2"
+	list_trees "$2" "$4" "$5"
+} # $1=adws $2=file $3=nc $4=level $5=verbose
 #=== MAIN ======================================================================
 usage() { cat<<-EOF
 mindriver, in which logs float down to the human world.
