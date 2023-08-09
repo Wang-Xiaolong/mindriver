@@ -301,8 +301,6 @@ list_tree() { dargs "$@"; local i lv rtlv _lv _i ind s lc ct mt hl
 	return 0
 } # $1=from $2=to $3=file $4=level $5=verbose
 list_trees() { iter_trees list_tree "$1" "$2" "$3"; } # $1=file $2=level $3=v
-ls1leaf() { dargs "$@"
-} # $1=id $2=file $3=level $4=relpath
 trees2seds() { dargs "$@"; local last=$((${#mr_roots[@]}-1)) ised tsed nc=0
 	for idx in $(seq 0 $last); do
 		local fr=${mr_roots[$idx]} to=${mr_tops[$idx]} irg
