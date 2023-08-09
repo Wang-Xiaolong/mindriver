@@ -279,7 +279,8 @@ lg2() { [[ $1 -lt 1 ]] && echo 0 || { [[ $1 -lt 2 ]] && echo 1 || {
 };};};};};};};};};} # 1-digit log2(int) for ct/mt/lc $1=int $2=max_letter
 list_node() { dargs "$@"; local s="$2$3" ind=$1
 	while (($ind>0)); do s="  $s"; let ind=$ind-1; done
-	echo "$s $7"
+	s=$(color "$s" "0;33")
+	echo -e "$s $7"
 } # $1=indent $2=sign $3=i $4=lc $5=ct $6=mt $7=hl $8=v
 list_tree() { dargs "$@"; local i lv rtlv _lv _i ind s lc ct mt hl
 	for i in $(seq $1 $2); do
