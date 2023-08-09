@@ -271,6 +271,12 @@ iter_trees() { local last=$((${#mr_roots[@]}-1)) func="$1"; shift
 			return 1; }
 	done
 } # $1=func(from, to, context...) $2+=context
+lg2() { [[ $1 -lt 1 ]] && echo 0 || { [[ $1 -lt 2 ]] && echo 1 || {
+	[[ $1 -lt 4 ]] && echo 2 || { [[ $1 -lt 8 ]] && echo 3 || {
+	[[ $1 -lt 16 ]] && echo 4 || { [[ $1 -lt 32 ]] && echo 5 || {
+	[[ $1 -lt 64 ]] && echo 6 || { [[ $1 -lt 128 ]] && echo 7 || {
+	[[ $1 -lt 256 ]] && echo 8 || { [[ $1 -lt 512 ]] && echo 9 || echo $2
+};};};};};};};};};} # 1-digit log2(int) for ct/mt/lc $1=int $2=max_letter
 list_node() { dargs "$@"; local s="$2$3" ind=$1
 	while (($ind>0)); do s="  $s"; let ind=$ind-1; done
 	echo "$s $7"
