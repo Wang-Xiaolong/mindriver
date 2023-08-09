@@ -182,7 +182,7 @@ ad2i() { dargs "$@"; local ad="$1" nc
 			err "Alias $1 not found."; return 4; }
 	fi; echo "$ad"
 } # $1=ad $2=file [$3=nc] address(integer|alias)->integer
-i2flds() { dargs "$@"; assert -n "$2" -a -f "$2"
+i2flds() { dargs "$@"; assert -f "$2"
 	local ln=$(sed "$(($1+1))p; d" "$2"); assert -n "$ln"
 	IFS=$'\t' read -r -a mr_flds <<< "$ln"
 }; declare -a mr_flds # $1=idx $2=file
@@ -279,7 +279,7 @@ list_tree() { dargs "$@"; local i lv rtlv _lv _i ind s lc ct mt hl
 	for i in $(seq $1 $2); do
 		i2flds $i "$3"; lv=${mr_flds[0]}
 		[ -z "$rtlv" ] && rtlv=$lv; dv rtlv lv _lv
-		if [[ $((lv-rtlv)) -gt "$4" ]]; then
+		if [[ -n "$4" && $((lv-rtlv)) -gt "$4" ]]; then
 			if [ -n "$_lv" ]; then list_node \
 				$ind '+' $_i $lc $ct $mt "$hl" "$5"
 				_lv=''
@@ -393,18 +393,19 @@ cpu() { dargs "$@"; local sf="$MR_FILE" df="$MR_FILE" di dlv=0
 		local act='' fr=$(spath "$sf")
 		case $1 in ac) act='copy';; acr) act='move';; ar) act='remove';;
 		esac; echo "You'll actually $act these notes from $fr..."
-		list_trees "$sf"
+		list_trees "$sf" '' ''
 		if [[ "$1" = ac* ]]; then
 			local to=$(spath "$df") flw='the following note of'
 			case "$4" in
 				i) echo "...into $flw $to:"
-					ls1leaf "$di" "$df" 0;;
+					list_tree "$di" "$di" "$df" 0;;
 				a) echo "...to after $flw $to:"
-					ls1leaf "$di" "$df" 0;;
+					list_tree "$di" "$di" "$df" 0;;
 				b) echo "...to before $flw $to:"
-					ls1leaf "$di" "$df" 0;;
+					list_tree "$di" "$di" "$df" 0;;
 				o) echo "...to replace $flw $to:"
-					ls1leaf "$di" "$df" -1;;
+					list_tree "$di" $(i2top "$di" "$df") \
+						"$df" '';;
 				f) [ -f "$df" ] && echo "...to the end of $to."\
 					|| echo "...to a nonexistent file $to,"\
 					"so it will be created.";;
