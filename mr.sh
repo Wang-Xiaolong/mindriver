@@ -751,9 +751,8 @@ Other OPTIONs:
   -H, --follow-link  Also earch the files linked to the FILEs, recursively.
 	EOF
 }
-func_search() {
-	local colon=$(color ":" "0;36") pre=$(color "$1" "0;35"); pre+="$colon"
-	pre+=$(color "$2" "0;33"); pre+="$colon"
+func_search() { local colon=$(color ":" "0;36") pre=$(color "${1%.mr}" "0;35")
+	pre+="$colon"; pre+=$(color "$2" "0;33"); pre+="$colon"
 	pre+=$(color "$3" "0;32"); pre+="$colon"
 	local txt=$(sed -n "$4p" "$1") mtchd=$(esc4sed "$5")
 	local cl=$(color "$5" "0;31"); cl=$(esc4sed "$cl")
