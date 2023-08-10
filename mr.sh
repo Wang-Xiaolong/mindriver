@@ -358,7 +358,7 @@ cpu() { dargs "$@"; local sf="$MR_FILE" df="$MR_FILE" di dlv=0
 	if [[ "$1" =~ ^(ar|acr|ac)$ ]]; then
 		[ -n "$2" ] && sf="$2"
 		[ -z "$sf" ] && { err "Source file not specified."; return 2; }
-		[[ "$sf" != *.mr ]] && sf="$sf.mr"
+		[[ "$sf" != *.mr ]] && sf+=".mr"
 		[ ! -f "$sf" ] && { err "$sf is not a file."; return 3; }
 		[ -z "$3" ] && { err "Empty \$3."; return 4; }
 		adws2trees "$3" "$sf"
@@ -375,7 +375,7 @@ cpu() { dargs "$@"; local sf="$MR_FILE" df="$MR_FILE" di dlv=0
 	if [[ "$1" =~ ^(ac|acr|n|ne)$ ]]; then
 		[ -n "$5" ] && df="$5"
 		[ -z "$df" ] && { err "Target file not specified."; return 2; }
-		[[ "$df" != *.mr ]] && df="$df.mr"
+		[[ "$df" != *.mr ]] && df+=".mr"
 		if [[ ${4:0:1} =~ ^(b|a|i|o)$ ]]; then
 			[ ! -f "$df" ] && { err "$df's not a file."; return 3; }
 			di=$(ad2i "$6" "$df"); [ $? -ne 0 -o -z "$di" ] && {
