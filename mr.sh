@@ -772,12 +772,16 @@ basic-regexp,perl-regexp,ignore-case,follow-link \
 		*) err "$ERR_OPT $1"; return;;
 	esac; done
 	[ -z "$1" ] && { err "No pattern!"; return; }
-	patterns="$1"
+	patterns="$1"; shift
 	for f in "$@"; do
 		[[ ! $f = *.mr ]] && f+=".mr"
 		[[ ! -f "$f" ]] && { err "Not found $f."; return; }
 		fs+=("$f")
 	done
+	if [[ "${#fs[@]}" -eq 0 ]]; then
+		[ -f "$MR_FILE" ] && fs+=$(spath "$MR_FILE") || {
+			err "No file specified."; return; }
+	fi
 	scheg func_search $opt "$patterns" "${fs[@]}"
 }
 #=== MAIN ======================================================================
