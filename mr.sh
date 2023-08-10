@@ -696,6 +696,43 @@ mr_list_adws() { dargs "$@"
 	adws2trees "$1" "$2"
 	list_trees "$2" "$4" "$5"
 } # $1=adws $2=file $3=nc $4=level $5=verbose
+#=== Search Engine based on grep ===============================================
+usage_scheg() { cat<<-EOF
+Usage: $(basename ${BASH_SOURCE[0]}) scheg [ARGS]
+Search Engine based on grep. ARGS will be directly passed to grep,
+with the following arguments by default passed:
+-H, --with-filename
+-n, --line-number
+-o, --only-matching
+The output lines are formatted as:
+file_path:note_id:line_number_in_note:line_number_in_file:matched_text
+	EOF
+}
+scheg() { dargs "$@"; local line f fln nc i; declare -a flds
+	grep -Hno "$@" | while read line; do dv line
+		# assume line format: file_path(f):line_num(fln):matched_txt
+		# split line into fields
+		IFS=":" read -ra flds <<< "$line"
+		# init loop when file's changed
+		if [[ -z "$f" || -z $(samepath "$f" "${flds[0]}") ]]; then
+			f="${flds[0]}"; nc=$(f2nc "$f"); i=0
+		fi
+		# Bypass lines in index area
+		fln="${flds[1]}"; [[ "$fln" -lt $((nc+1)) ]] && continue
+		# Calc note id(i) & line num in note(nln)
+		while ((i<=nc)); do dv i
+			local tlrg=$(i2tlrg "$i" "$f") lo hi
+			[ -z "$tlrg" ] && break; dv tlrg
+			read lo hi <<< $(sed 's/,/ /' <<< "$tlrg"); dv lo hi
+			[ -z "$hi" ] && hi="$lo"
+			[[ $fln -ge $lo && $fln -le $hi ]] && {
+				local nln=$((fln-lo+1))
+				echo "$f:$i:$nln:$fln:${line#*:*:}"
+				break; }
+			((i++))
+		done
+	done
+}
 #=== MAIN ======================================================================
 usage() { cat<<-EOF
 mindriver, in which logs float down to the human world.
@@ -731,6 +768,7 @@ case "$1" in help) usage;;
 	r|rm|remove) shift; [ -n "$hlp" ] && usage_remove || mr_remove "$@";;
 	m|mv|move) shift; [ -n "$hlp" ] && usage_move || mr_move "$@";;
 	l|ls|list) shift; [ -n "$hlp" ] && usage_list || mr_list "$@";;
+	scheg) shift; [ -n "$hlp" ] && usage_scheg || scheg "$@";;
 	s|search) shift; [ -n "$hlp" ] && usage_search || mr_search "$@";;
 	*) dir=$(dirname ${BASH_SOURCE[0]}) cmd=$1; shift
 		if [ -f "$dir/mr.$cmd.sh" ]; then . "$dir/mr.$cmd.sh" "$@"
