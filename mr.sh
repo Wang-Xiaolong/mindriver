@@ -751,7 +751,35 @@ Other OPTIONs:
   -H, --follow-link  Also earch the files linked to the FILEs, recursively.
 	EOF
 }
-
+func_search() {
+	local colon=$(color ":" "0;36") pre=$(color "$1" "0;35"); pre+="$colon"
+	pre+=$(color "$2" "0;32"); pre+="$colon"
+	pre+=$(color "$3" "0;33"); pre+="$colon"
+	local txt=$(sed -n "$4p" "$1") mtchd=$(esc4sed "$5")
+	local cl=$(color "$5" "0;31"); cl=$(esc4sed "$cl")
+	txt=$(sed "s/$mtchd/$cl/" <<< "$txt")
+	echo -e "$pre $txt"
+} # $1=file_path $2=note_id $3=note_ln $4=file_ln $5=matched_txt
+mr_search() { PARAMS=$(getopt -o EFGPiH -l extended-regexp,fixed-strings,\
+basic-regexp,perl-regexp,ignore-case,follow-link \
+	-n 'mr_search' -- "$@"); [ $? -ne 0 ] && err "$ERR_ARG" && return
+	eval set -- "$PARAMS"; dargs "$@"
+	local opt flnk patterns f fs
+	while : ; do case "$1" in --) shift; break;;
+		-E|--extended-regexp|-F|--fixed-strings|-G|--basic-regexp|\
+		-P|--perl-regexp|-i|--ignore-case) opt+=" $1"; shift 2;;
+		-H|--follow-link) flnk=y; shift;;
+		*) err "$ERR_OPT $1"; return;;
+	esac; done
+	[ -z "$1" ] && { err "No pattern!"; return; }
+	patterns="$1"
+	for f in "$@"; do
+		[[ ! $f = *.mr ]] && f+=".mr"
+		[[ ! -f "$f" ]] && { err "Not found $f."; return; }
+		fs+=("$f")
+	done
+	scheg func_search $opt "$patterns" "${fs[@]}"
+}
 #=== MAIN ======================================================================
 usage() { cat<<-EOF
 mindriver, in which logs float down to the human world.
