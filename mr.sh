@@ -698,17 +698,19 @@ mr_list_adws() { dargs "$@"
 } # $1=adws $2=file $3=nc $4=level $5=verbose
 #=== Search Engine based on grep ===============================================
 usage_scheg() { cat<<-EOF
-Usage: $(basename ${BASH_SOURCE[0]}) scheg [ARGS]
+Usage: $(basename ${BASH_SOURCE[0]}) scheg [FUNC] [ARGS]
 Search Engine based on grep. ARGS will be directly passed to grep,
 with the following arguments by default passed:
   -H, --with-filename
   -n, --line-number
   -o, --only-matching
-The output lines are formatted as:
+If FUNC is empty, the output lines are formatted as:
 file_path:note_id:line_number_in_note:line_number_in_file:matched_text
+FUNC is the name of the function that make things different based on the 5
+fields above.
 	EOF
 }
-scheg() { dargs "$@"; local line f fln nc i; declare -a flds
+scheg() { dargs "$@"; local line f fln nc i func="$1"; declare -a flds; shift
 	grep -Hno "$@" | while read line; do dv line
 		# assume line format: file_path(f):line_num(fln):matched_txt
 		# split line into fields
@@ -727,7 +729,9 @@ scheg() { dargs "$@"; local line f fln nc i; declare -a flds
 			[ -z "$hi" ] && hi="$lo"
 			[[ $fln -ge $lo && $fln -le $hi ]] && {
 				local nln=$((fln-lo+1))
-				echo "$f:$i:$nln:$fln:${line#*:*:}"
+				[ -n "$func" ] && $func "$f" "$i" "$nln" \
+					"$fln" "${line#*:*:}" || \
+					echo "$f:$i:$nln:$fln:${line#*:*:}"
 				break; }
 			((i++))
 		done
