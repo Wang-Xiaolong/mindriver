@@ -766,7 +766,7 @@ basic-regexp,perl-regexp,ignore-case,follow-link \
 	local opt flnk patterns f fs
 	while : ; do case "$1" in --) shift; break;;
 		-E|--extended-regexp|-F|--fixed-strings|-G|--basic-regexp|\
-		-P|--perl-regexp|-i|--ignore-case) opt+=" $1"; shift 2;;
+		-P|--perl-regexp|-i|--ignore-case) opt+=" $1"; shift;;
 		-H|--follow-link) flnk=y; shift;;
 		*) err "$ERR_OPT $1"; return;;
 	esac; done
