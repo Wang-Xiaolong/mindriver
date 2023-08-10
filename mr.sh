@@ -701,9 +701,9 @@ usage_scheg() { cat<<-EOF
 Usage: $(basename ${BASH_SOURCE[0]}) scheg [ARGS]
 Search Engine based on grep. ARGS will be directly passed to grep,
 with the following arguments by default passed:
--H, --with-filename
--n, --line-number
--o, --only-matching
+  -H, --with-filename
+  -n, --line-number
+  -o, --only-matching
 The output lines are formatted as:
 file_path:note_id:line_number_in_note:line_number_in_file:matched_text
 	EOF
@@ -733,6 +733,21 @@ scheg() { dargs "$@"; local line f fln nc i; declare -a flds
 		done
 	done
 }
+#=== SEARCH files for patterns =================================================
+usage_search() { cat<<-EOF
+Usage: $(basename ${BASH_SOURCE[0]}) search [OPTION...] [PATTERNS] [FILE...]
+Search files for patterns. If FILEs are empty, search in MR_FILE.
+OPTIONs that will be directly passed to grep:
+  -E, --extended-regexp
+  -F, --fixed-strings
+  -G, --basic-regexp
+  -P, --perl-regexp
+  -i, --ignore-case
+Other OPTIONs:
+  -H, --follow-link  Also earch the files linked to the FILEs, recursively.
+	EOF
+}
+
 #=== MAIN ======================================================================
 usage() { cat<<-EOF
 mindriver, in which logs float down to the human world.
