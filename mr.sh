@@ -758,7 +758,7 @@ func_search() { local colon=$(color ":" "0;36") pre=$(color "${1%.mr}" "0;35")
 	pre+=$(color "$3" "0;32"); pre+="$colon"
 	local txt=$(sed -n "$4p" "$1") mtchd=$(esc4sed "$5")
 	local cl=$(color "$5" "0;31"); cl=$(esc4sed "$cl")
-	txt=$(sed "s/$mtchd/$cl/" <<< "$txt")
+	txt=$(sed "s/$mtchd/$cl/g" <<< "$txt")
 	echo -e "$pre $txt"
 } # $1=file_path $2=note_id $3=note_ln $4=file_ln $5=matched_txt
 mr_search() { PARAMS=$(getopt -o EFGPiH -l extended-regexp,fixed-strings,\
