@@ -711,11 +711,12 @@ FUNC is the name of the function that make things different based on the 5
 fields above.
 	EOF
 }
-scheg() { dargs "$@"; local line f fln nc i func="$1"; declare -a flds; shift
-	grep -Hno "$@" | while read line; do dv line
+scheg() { dargs "$@"; local ln old f fln nc i func="$1"; declare -a flds; shift
+	grep -Hno "$@" | while read ln; do dv ln
+		[ "$ln" = "$old" ] && continue || old="$ln"
 		# assume line format: file_path(f):line_num(fln):matched_txt
 		# split line into fields
-		IFS=":" read -ra flds <<< "$line"
+		IFS=":" read -ra flds <<< "$ln"
 		# init loop when file's changed
 		if [[ -z "$f" || -z $(samepath "$f" "${flds[0]}") ]]; then
 			f="${flds[0]}"; nc=$(f2nc "$f"); i=0
@@ -731,8 +732,8 @@ scheg() { dargs "$@"; local line f fln nc i func="$1"; declare -a flds; shift
 			[[ $fln -ge $lo && $fln -le $hi ]] && {
 				local nln=$((fln-lo+1))
 				[ -n "$func" ] && $func "$f" "$i" "$nln" \
-					"$fln" "${line#*:*:}" || \
-					echo "$f:$i:$nln:$fln:${line#*:*:}"
+					"$fln" "${ln#*:*:}" || \
+					echo "$f:$i:$nln:$fln:${ln#*:*:}"
 				break; }
 			((i++))
 		done
