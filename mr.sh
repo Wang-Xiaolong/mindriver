@@ -165,6 +165,7 @@ ln2meta() { dargs "$@"; mr_as='' mr_tp='' mr_dr=''
 	fi; dv mr_as mr_tp mr_dr
 }; mr_as='' mr_tp='' mr_dr=''
 ln2as() { ln2meta "$1"; echo "$mr_as"; }
+i2as() { ln2as $(sed -n "$(($1+1))s/^\([^\t]*\t\)\{5\}//;$(($1+1))p" "$2"); }
 #== NoteCount(nc) & Index(i) Functions =========================================
 f2nc() { local nc=$(sed -n '1s/^\([0-9]*\)\t.*/\1/p' "$1")
 	[ -z "$nc" ] && erx "No note count in $1." || echo "$nc"
@@ -752,7 +753,8 @@ Other OPTIONs:
 	EOF
 }
 func_search() { local colon=$(color ":" "0;36") pre=$(color "${1%.mr}" "0;35")
-	pre+="$colon"; pre+=$(color "$2" "0;33"); pre+="$colon"
+	local as=$(i2as "$2" "$1"); [ -z "$as" ] && as="$2" || as="$2|$as"
+	pre+="$colon"; pre+=$(color "$as" "0;33"); pre+="$colon"
 	pre+=$(color "$3" "0;32"); pre+="$colon"
 	local txt=$(sed -n "$4p" "$1") mtchd=$(esc4sed "$5")
 	local cl=$(color "$5" "0;31"); cl=$(esc4sed "$cl")
