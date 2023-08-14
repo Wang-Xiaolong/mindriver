@@ -164,6 +164,7 @@ ln2meta() { dargs "$@"; mr_as='' mr_tp='' mr_dr=''
 		fi
 	fi; dv mr_as mr_tp mr_dr
 }; mr_as='' mr_tp='' mr_dr=''
+i2meta() { ln2meta $(sed -n "$(($1+1))s/^\([^\t]*\t\)\{5\}//;$(($1+1))p" "$2"); }
 ln2as() { ln2meta "$1"; echo "$mr_as"; }
 i2as() { ln2as $(sed -n "$(($1+1))s/^\([^\t]*\t\)\{5\}//;$(($1+1))p" "$2"); }
 #== NoteCount(nc) & Index(i) Functions =========================================
@@ -466,7 +467,7 @@ cpu() { dargs "$@"; local sf="$MR_FILE" df="$MR_FILE" di dlv=0
 	fi; dt ilnbuf txtbuf
 	# Use saved ct+sig to get the di back
 	if [[ ${4:0:1} =~ ^(b|a|i|o)$ ]]; then
-		local ndi=$(sig2i ${dflds[2]} ${dflds[3]} $df); dv ndi
+		local ndi=$(sig2i ${dflds[2]} ${dflds[3]} "$df"); dv ndi
 		if [ -z "$ndi" ]; then
 			err "Target lost!"
 			# ask user to input a new target here
@@ -762,6 +763,24 @@ func_search() { local colon=$(color ":" "0;36") pre=$(color "${1%.mr}" "0;35")
 	txt=$(sed "s/$mtchd/$cl/g" <<< "$txt")
 	echo -e "$pre $txt"
 } # $1=file_path $2=note_id $3=note_ln $4=file_ln $5=matched_txt
+f_in_flfs() { for f in "${mr_flfs[@]}"; do
+	[[ -n $(samepath "$f" "$1") ]] && { echo y; break; }
+done; } # $1=file, if in echo y
+f2flfs() { dargs "$@"
+	[[ -n $(f_in_flfs "$1") ]] && return
+	mr_flfs+=("$1")
+	local nc=$(f2nc "$1") i as dir=$(dirname "$1")
+	for i in $(seq 1 $nc); do
+		i2meta $i "$1"
+		[[ ! "$mr_tp" = '~' ]] && continue
+		[ -z "$mr_as" ] && continue
+		as="$mr_as"
+		[[ ! $as = *.mr ]] && as+='.mr'
+		[ ! -f "$dir/$as" ] && {
+			err "$dir/$as not found."; continue; }
+		f2flfs "$dir/$as"
+	done
+}; mr_flfs=() # Files->FollowLinkFiles
 mr_search() { PARAMS=$(getopt -o EFGPiH -l extended-regexp,fixed-strings,\
 basic-regexp,perl-regexp,ignore-case,follow-link \
 	-n 'mr_search' -- "$@"); [ $? -ne 0 ] && err "$ERR_ARG" && return
@@ -783,6 +802,12 @@ basic-regexp,perl-regexp,ignore-case,follow-link \
 	if [[ "${#fs[@]}" -eq 0 ]]; then
 		[ -f "$MR_FILE" ] && fs+=$(spath "$MR_FILE") || {
 			err "No file specified."; return; }
+	fi
+	if [ -n "$flnk" ]; then
+		for f in "${fs[@]}"; do
+			f2flfs "$f"
+		done
+		fs=("${mr_flfs[@]}")
 	fi
 	scheg func_search $opt "$patterns" "${fs[@]}"
 }
