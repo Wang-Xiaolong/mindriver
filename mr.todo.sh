@@ -18,11 +18,13 @@ Arguments:
 func_todo() { dargs "$@"; local wd pr dt ctx
 	# Get the 1st word of the matched text
 	wd=$(sed 's/^![[:space:]]*\([[:alnum:]_]\+\).*$/\1/' <<< "$6")
-	[[ $wd =~ ^[0-9] ]] && { pr="${wd:0:1}"; wd="${wd:1}"; } || wd=''
+	[[ $wd =~ ^[0-9] ]] && {
+		pr=$(color "${wd:0:1}" "0;35"); wd="${wd:1}"; } || wd=''
 	if [[ $wd =~ _[0-9]{5,9}$ ]]; then
 		dt=$(sed 's/.*_\([0-9]\{5,9\}\)$/\1/' <<< "$wd")
+		dt=$(color "$dt" "0;32")
 		wd=$(sed 's/_[0-9]\{5,9\}$//' <<< "$wd")
-	fi; [ -n "$wd" ] && ctx="$wd"
+	fi; [ -n "$wd" ] && ctx=$(color "$wd" "0;33")
 	local colon=$(color ":" "0;36") pre=$(color "${2%.mr}" "0;35")
 	local as=$(i2as "$3" "$2"); [ -z "$as" ] && as="$3" || as="$3|$as"
 	pre+="$colon"; pre+=$(color "$as" "0;33"); pre+="$colon"
@@ -30,7 +32,7 @@ func_todo() { dargs "$@"; local wd pr dt ctx
 	local txt=$(sed -n "$5p" "$2") mtchd=$(esc4sed "$6")
 	local cl=$(color "$6" "1;33"); cl=$(esc4sed "$cl")
 	txt=$(sed "s/$mtchd/$cl/g" <<< "$txt")
-	echo -e "$pr$colon$dt$colon$ctx$colon$pre $txt"
+	echo -e "$pr$colon$ctx$colon$dt$colon$pre$txt"
 } # $1=type $2=file_path $3=note_id $4=note_ln $5=file_ln $6=matched_txt
 mr_todo() { PARAMS=$(getopt -o t:p:c:d:H -l \
 	type:,priority:,context:,due:,follow-link \
