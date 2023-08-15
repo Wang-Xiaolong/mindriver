@@ -171,7 +171,7 @@ i2as() { ln2as $(sed -n "$(($1+1))s/^\([^\t]*\t\)\{5\}//;$(($1+1))p" "$2"); }
 f2nc() { local nc=$(sed -n '1s/^\([0-9]*\)\t.*/\1/p' "$1")
 	[ -z "$nc" ] && erx "No note count in $1." || echo "$nc"
 } # file->note_count
-ad2i() { dargs "$@"; local ad="$1" nc
+ad2i() { dargs "$@"; [ -z "$1" ] && return; local ad="$1" nc
 	[ "$ad" = '+' ] && { [ -n "$MR_FOCUS" ] && ad="$MR_FOCUS" || {
 		err "Address + without MR_FOCUS defined."; return 5; };}
 	[ -n "$3" ] && nc="$3" || { nc=$(f2nc "$2"); [ -z "$nc" ] && {
