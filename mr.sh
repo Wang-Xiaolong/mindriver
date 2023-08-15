@@ -554,14 +554,14 @@ Update the text of a specified note.
 }
 mr_edit() { PARAMS=$(getopt -o f:e: -l file:,editor: \
 	-n 'mr_edit' -- "$@"); [ $? -ne 0 ] && err "$ERR_ARG" && return
-	eval set -- "$PARAMS"; dargs "$@"
-	local f edr ad
+	eval set -- "$PARAMS"; dargs "$@"; local f edr
 	while : ; do case "$1" in --) shift; break;;
 		-f|--file) f="$2"; shift 2;;
 		-e|--editor) edr="$2"; shift 2;;
 		*) err "$ERR_OPT $1"; return;;
-	esac; done; ad="$*"
-	cpu ne '' "$edr" os "$f" "$ad"
+	esac; done
+	[ $# -ne 1 ] && { err "Need to specify 1 and only 1 note."; return; }
+	cpu ne '' "$edr" os "$f" "$1"
 }
 #=== REMOVE notes ==============================================================
 usage_remove() { cat<<-EOF
