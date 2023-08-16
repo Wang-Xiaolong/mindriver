@@ -682,7 +682,7 @@ mr_list() { PARAMS=$(getopt -o f:l:v -l file:,level:,verbose \
 	[ ! -f "$file" ] && err "$file not exist." && return
 	local nc=$(f2nc "$file"); dbg "$file exist with $nc lines."
 	[ -z "$*" ] && adws="1,$nc" || adws="$*"
-	mr_list_adws "$adws" "$file" "$nc" "$level"
+	mr_list_adws "$adws" "$file" "$nc" "$level" "$v"
 }
 mr_list_dir() { dargs "$@"
 	local files=$(find "$1" -name '*.mr') f r nc
@@ -691,7 +691,7 @@ mr_list_dir() { dargs "$@"
 		i2flds 0 "$f"
 		printf "\e[0;33m$r\e[0m ${mr_flds[5]}\n"
 		nc=$(f2nc "$f")
-		mr_list_adws "1,$nc" "$f" "$nc" "$(($2-1))"
+		mr_list_adws "1,$nc" "$f" "$nc" "$(($2-1))" "$3"
 	done
 } # $1=dir $2=level $3=verbose
 mr_list_adws() { dargs "$@"
