@@ -180,7 +180,7 @@ ad2i() { dargs "$@"; [ -z "$1" ] && return; local ad="$1" nc
 		err "Too big index $ad(>$nc)"; return 2; }
 	else ad=$(awk -F'\t' \
 		'$6 ~ /[[:punct:]]*\('"$ad$mr_tps"'/{print NR-1; exit}' "$2")
-		[ -z "$ad" -o "$ad" -gt "$nc" ] && {
+		[ -z "$ad" ] || [ "$ad" -gt "$nc" ] && {
 			err "Alias $1 not found."; return 4; }
 	fi; echo "$ad"
 } # $1=ad $2=file [$3=nc] address(integer|alias)->integer
