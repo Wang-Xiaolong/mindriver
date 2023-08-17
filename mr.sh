@@ -685,13 +685,11 @@ mr_list() { PARAMS=$(getopt -o f:l:v -l file:,level:,verbose \
 	mr_list_adws "$adws" "$file" "$nc" "$level" "$v"
 }
 mr_list_dir() { dargs "$@"
-	local files=$(find "$1" -name '*.mr') f r nc
+	local files=$(find "$1" -maxdepth "$2" -name '*.mr') f r nc
 	for f in $files; do
 		r=$(realpath --relative-to="$1" "$f"); r=${r%.mr}
 		i2flds 0 "$f"
-		printf "\e[0;33m$r\e[0m ${mr_flds[5]}\n"
-		nc=$(f2nc "$f")
-		mr_list_adws "1,$nc" "$f" "$nc" "$(($2-1))" "$3"
+		printf "\e[0;35m$r \e[0;32m${mr_flds[0]}\e[0m ${mr_flds[5]}\n"
 	done
 } # $1=dir $2=level $3=verbose
 mr_list_adws() { dargs "$@"
