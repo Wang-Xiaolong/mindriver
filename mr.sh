@@ -721,7 +721,7 @@ scheg() { dargs "$@"; local ln old f fln nc i func="$1"; declare -a flds; shift
 			f="${flds[0]}"; nc=$(f2nc "$f"); i=0
 		fi
 		# Bypass lines in index area
-		fln="${flds[1]}"; [[ "$fln" -lt $((nc+1)) ]] && continue
+		fln="${flds[1]}"; [[ "$fln" -le $((nc+1)) ]] && continue
 		# Calc note id(i) & line num in note(nln)
 		while ((i<=nc)); do dv i
 			local tlrg=$(i2tlrg "$i" "$f") lo hi
