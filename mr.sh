@@ -315,7 +315,7 @@ list_tree() { dargs "$@"; local i lv rtlv _lv _i ind s lc ct mt hl
 	for i in $(seq $1 $2); do
 		i2flds $i "$3"; lv=${mr_flds[0]}
 		[ -z "$rtlv" ] && rtlv=$lv; dv rtlv lv _lv
-		if [[ -n "$4" && $((lv-rtlv)) -gt "$4" ]]; then
+		if [[ -n "$4" && $((lv-rtlv)) -ge "$4" ]]; then
 			if [ -n "$_lv" ]; then list_node \
 				$ind '+' $_i $lc $ct $mt "$hl" "$5"
 				_lv=''
