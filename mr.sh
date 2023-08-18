@@ -37,7 +37,7 @@ unvar() { # BKM: clean variables and functions from current shell with unset
 }
 ps='\[\e]0;$($MR_SH ps title)\a\]\[\e[0;92m\]$($MR_SH ps path)'\
 '\[\e[0;91m\]$($MR_SH ps focus)\[\e[0;94m\]\w\[\e[0m\]$ '
-mr_tps='[),#<>?!/~*]'
+mr_tps='[),;*?!#~/]'
 if [ "$mr_sourced" = true ]; then
 	if [ $# -eq 0 ]; then
 		if [ -n "$MR_SH" ]; then
