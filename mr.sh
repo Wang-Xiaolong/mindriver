@@ -279,10 +279,24 @@ lg2() { [[ $1 -lt 1 ]] && echo 0 || { [[ $1 -lt 2 ]] && echo 1 || {
 	[[ $1 -lt 64 ]] && echo 6 || { [[ $1 -lt 128 ]] && echo 7 || {
 	[[ $1 -lt 256 ]] && echo 8 || { [[ $1 -lt 512 ]] && echo 9 || echo $2
 };};};};};};};};};} # 1-digit log2(int) for ct/mt/lc $1=int $2=max_letter
-list_node() { dargs "$@"; local s="$2$3" ind=$1
+dt2str() { local dti=$(r64x2int "$1") dtc=$(date +%s) fmt='%Y%m%d'
+	local delta=$(( (dtc-dti)/86400 )); dv dti dtc delta
+	[ -z "$2" ] && { lg2 "$delta" 'L'; return; }
+	[[ $delta -le $((180*86400)) && $delta -ge 0 ]] && fmt='%m%d' || {
+	[[ $delta -gt $((180*86400)) && $delta -le $((50*365*86400)) ]] && fmt='%y%m%d'; }
+	date -d@$dti +$fmt
+} # $1=dt $2=v
+list_node() { dargs "$@"; local s="$2$3" ind=$1 ct mt lc dtlc
 	while (($ind>0)); do s="  $s"; let ind=$ind-1; done
-	s=$(color "$s" "0;33")
-	echo -e "$s $7"
+	ct=$(dt2str "$5" "$8") dtlc="$ct"
+	if [ ! "$5" = "$6" ]; then
+		mt=$(dt2str "$6" "$8")
+		[ -z "$8" ] && dtlc+="$mt" || dtlc+="-$mt"
+	fi
+	[ -z "$8" ] && lc=$(lg2 "$4" 'L') || lc="[$4]"
+	dtlc+="$lc"
+	s=$(color "$s" "0;33"); dtlc=$(color "$dtlc" "0;32")
+	echo -e "$s $dtlc $7"
 } # $1=indent $2=sign $3=i $4=lc $5=ct $6=mt $7=hl $8=v
 list_tree() { dargs "$@"; local i lv rtlv _lv _i ind s lc ct mt hl
 	for i in $(seq $1 $2); do
