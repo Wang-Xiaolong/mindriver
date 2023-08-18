@@ -154,7 +154,7 @@ ln2meta() { dargs "$@"; mr_as='' mr_tp='' mr_dr=''
 	local RE_DR='^[0-9]{8}(-[0-9]{0,8})?|-$'
 	if [[ $1 =~ ^[[:punct:]]*\(([^[:space:]\)]+)\) ]]; then
 		local meta=${BASH_REMATCH[1]}
-		if [[ $meta =~ ^(.*)([,#><?!/~])(.*)$ ]]; then
+		if [[ $meta =~ ^(.*)([,;*?!#~/])(.*)$ ]]; then
 			mr_as=${BASH_REMATCH[1]}
 			mr_tp=${BASH_REMATCH[2]}
 			mr_dr=${BASH_REMATCH[3]}
