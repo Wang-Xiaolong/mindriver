@@ -286,7 +286,15 @@ dt2str() { local dti=$(r64x2int "$1") dtc=$(date +%s) fmt='%Y%m%d'
 	[[ $delta -gt $((180*86400)) && $delta -le $((50*365*86400)) ]] && fmt='%y%m%d'; }
 	date -d@$dti +$fmt
 } # $1=dt $2=v
-list_node() { dargs "$@"; local s="$2$3" ind=$1 ct mt lc dtlc
+str2fit() { local w=$(wc -L <<< "$1")
+	[ "$w" -le "$2" ] && { echo "$1"; return; }
+	local i="$2"; while ((i>0)); do
+		w=$(wc -L <<< "${1:0:$i}")
+		if ((w<=$2-3)); then echo "${1:0:$i}..."; return; fi
+		((i--))
+	done
+} # $1=str $2=width
+list_node() { dargs "$@"; local s="$2$3" ind=$1 ct mt lc dtlc hl="$7"
 	while (($ind>0)); do s="  $s"; let ind=$ind-1; done
 	ct=$(dt2str "$5" "$8") dtlc="$ct"
 	if [ ! "$5" = "$6" ]; then
@@ -295,8 +303,9 @@ list_node() { dargs "$@"; local s="$2$3" ind=$1 ct mt lc dtlc
 	fi
 	[ -z "$8" ] && lc=$(lg2 "$4" 'L') || lc="[$4]"
 	dtlc+="$lc"
+	[ -z "$8" ] && hl=$(str2fit "$hl" $(( $(tput cols)-${#s}-${#dtlc}-2 )))
 	s=$(color "$s" "0;33"); dtlc=$(color "$dtlc" "0;32")
-	echo -e "$s $dtlc $7"
+	echo -e "$s $dtlc $hl"
 } # $1=indent $2=sign $3=i $4=lc $5=ct $6=mt $7=hl $8=v
 list_tree() { dargs "$@"; local i lv rtlv _lv _i ind s lc ct mt hl
 	for i in $(seq $1 $2); do
