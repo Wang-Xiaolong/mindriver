@@ -307,7 +307,7 @@ list_node() { dargs "$@"; local s="$2$3" ind=$1 ct mt lc dtlc hl="$7"
 	ln2meta "$hl"; local cl='0;32'
 	case "$mr_tp" in '?') cl='0;31';; '!') cl='0;33';; '#') cl='0;35';;
 		'~') cl='0;36';; '/') cl='1;34';; '*') cl='1;32';; esac
-	hl=$(sed "s/^\([[:punct:]]*\)\(([[:graph:]]\+)\)/\1\\\\e[${cl}m\2\\\\e[0m/" <<< "$hl")
+	hl=$(sed "s/^\([[:punct:]]*\)\(([^)[:space:]]\+)\)/\1\\\\e[${cl}m\2\\\\e[0m/" <<< "$hl")
 	s=$(color "$s" "0;33"); dtlc=$(color "$dtlc" "0;32")
 	echo -e "$s $dtlc $hl"
 } # $1=indent $2=sign $3=i $4=lc $5=ct $6=mt $7=hl $8=v
