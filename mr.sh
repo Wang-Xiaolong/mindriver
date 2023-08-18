@@ -676,8 +676,8 @@ print1leaf() { assert -n $1 -a -f "$2"; i2flds "$1" "$2";
 	local ct=${mr_flds[2]} mt=${mr_flds[4]} dtf="%Y-%m-%d/%H:%M"
 	local d=$(date -d @$(r64x2int "$ct") +"created:$dtf") lc=${mr_flds[1]}
 	[[ ! $mt = $ct ]] && d+=$(date -d @$(r64x2int "$mt") +" modified:$dtf")
-	local bs=$(basename "$2") t=$(i2txt "$1" "$2") len=$(wc -L <<< "$t")
-	printf "\e[0;33m$1/$bs \e[0;32m${lc}l ${len}c $d\e[0m\n"
+	local bs=$(basename "$2") t=$(i2txt "$1" "$2")
+	printf "\e[0;33m$1/$bs \e[0;32m${lc}l ${#t}c $d\e[0m\n"
 	[ -z $4 ] && echo "$t" && return 0
 	local e="\\033[0;33m%-${#lc}s\\033[0m"
 	echo "$t" | awk "{printf \"$e %s\\n\", NR, \$0}"
