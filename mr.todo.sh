@@ -17,7 +17,8 @@ Arguments:
 }; [ -n "$hlp" ] && usage_todo && return
 func_todo() { dargs "$@"; local wd pr dt ctx
 	# Get the 1st word of the matched text
-	wd=$(sed 's/^![[:space:]]*\([[:alnum:]_]\+\).*$/\1/' <<< "$6")
+	wd=$(sed 's/^[[:space:]]*![[:space:]]*\([[:alnum:]_]\+\).*$/\1/' \
+		<<< "$6")
 	[[ $wd =~ ^[0-9] ]] && {
 		pr=$(color "${wd:0:1}" "0;35"); wd="${wd:1}"; } || wd=''
 	if [[ $wd =~ _[0-9]{5,9}$ ]]; then
@@ -52,13 +53,13 @@ mr_todo() { PARAMS=$(getopt -o t:p:c:d:H -l \
 	case $tp in '') err 'No type specified.'; return;;
 		t) if [ -z "$pr" ]; then err "Empty priority."; return
 		   elif [[ "$pr" = _ ]]; then
-			ptrn='(?<=^|\s)\!(\w+|\s.*$)'
+			ptrn='(^|(?<![{[(=\s])\s+)\!(\w+|\s.*$)'
 		   else local pcd="$pr"
 			if [[ "$ctx" = _ && "$dt" = _ ]]; then pcd+="\w*\b"
 			elif [[ "$dt" = _ ]]; then pcd+="$ctx(\b|_)"
 			elif [[ "$ctx" = _ ]]; then pcd+="\w*_$dt\b"
 			else pcd+="${ctx}_$dt\b"
-			fi; ptrn="(?<=^|\s)\!($pcd|\s*$pcd.*$)"
+			fi; ptrn="(^|(?<![{[(=\s])\s+)\!($pcd|\s*$pcd.*$)"
 		   fi;;
 		d)	:
 			;;
