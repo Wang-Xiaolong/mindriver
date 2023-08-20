@@ -31,6 +31,7 @@ func_todo() { dargs "$@"; local wd pr dt ctx
 	pre+="$colon"; pre+=$(color "$as" "0;33"); pre+="$colon"
 	pre+=$(color "$4" "0;32"); pre+="$colon"
 	local txt=$(sed -n "$5p" "$2") mtchd=$(esc4sed "$6")
+	[[ "$txt" =~ ^[[:blank:]]*\|[[:blank:]]+ ]] && return
 	local cl=$(color "$6" "1;33"); cl=$(esc4sed "$cl")
 	txt=$(sed "s/$mtchd/$cl/g" <<< "$txt")
 	echo -e "$pr$colon$ctx$colon$dt$colon$pre$txt"
