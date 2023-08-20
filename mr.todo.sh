@@ -17,7 +17,7 @@ Arguments:
 }; [ -n "$hlp" ] && usage_todo && return
 func_todo() { dargs "$@"; local wd pr dt ctx
 	# Get the 1st word of the matched text
-	wd=$(sed 's/^[[:space:]]*![[:space:]]*\([[:alnum:]_]\+\).*$/\1/' \
+	wd=$(sed 's/^[[:blank:]]*![[:blank:]]*\([[:alnum:]_]\+\).*$/\1/' \
 		<<< "$6")
 	[[ $wd =~ ^[0-9] ]] && {
 		pr=$(color "${wd:0:1}" "0;35"); wd="${wd:1}"; } || wd=''
