@@ -79,5 +79,9 @@ mr_todo() { PARAMS=$(getopt -o t:p:c:d:H -l \
 		[ -f "$MR_FILE" ] && fs+=$(spath "$MR_FILE") || {
 			err "No file specified."; return; }
 	fi
+	if [ -n "$flnk" ]; then
+		for f in "${fs[@]}"; do f2flfs "$f"; done
+		fs=("${mr_flfs[@]}")
+	fi
 	scheg "func_todo $tp" -P "$ptrn" "${fs[@]}"
 }; mr_todo "$@"
