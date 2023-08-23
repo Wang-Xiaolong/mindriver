@@ -432,11 +432,11 @@ cpu() { dargs "$@"; local sf="$MR_FILE" df="$MR_FILE" di dlv=0
 			local to=$(spath "$df") flw='the following note of'
 			case "$4" in
 				i) echo "...into $flw $to:"
-					list_tree "$di" "$di" "$df" 0;;
+					list_tree "$di" "$di" "$df" 1;;
 				a) echo "...to after $flw $to:"
-					list_tree "$di" "$di" "$df" 0;;
+					list_tree "$di" "$di" "$df" 1;;
 				b) echo "...to before $flw $to:"
-					list_tree "$di" "$di" "$df" 0;;
+					list_tree "$di" "$di" "$df" 1;;
 				o) echo "...to replace $flw $to:"
 					list_tree "$di" $(i2top "$di" "$df") \
 						"$df" '';;
