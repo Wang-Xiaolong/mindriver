@@ -13,6 +13,7 @@ Arguments:
   -d, --date=[re]      8-digit date like 20230811, or 2023\\\\d*
   -c, --context=[re]   User defined context word
   -H, --follow-link
+  -k, --key=KEYDEF     Sort via a key. Will be passed to sort command.
 	EOF
 }; [ -n "$hlp" ] && usage_todo && return
 func_todo() { dargs "$@"; local wd pr dt ctx
@@ -36,11 +37,11 @@ func_todo() { dargs "$@"; local wd pr dt ctx
 	txt=$(sed "s/$mtchd/$cl/g" <<< "$txt")
 	echo -e "$pr$colon$ctx$colon$dt$colon$pre$txt"
 } # $1=type $2=file_path $3=note_id $4=note_ln $5=file_ln $6=matched_txt
-mr_todo() { PARAMS=$(getopt -o t:p:c:d:H -l \
-	type:,priority:,context:,due:,follow-link \
+mr_todo() { PARAMS=$(getopt -o t:p:c:d:Hk: -l \
+	type:,priority:,context:,due:,follow-link,key: \
 	-n 'mr_todo' -- "$@"); [ $? -ne 0 ] && err "$ERR_ARG" && return
 	eval set -- "$PARAMS"; dargs "$@"
-	local tp=t pr='\d' ctx=_ dt=_ flnk f ptrn; declare -a fs
+	local tp=t pr='\d' ctx=_ dt=_ flnk f ptrn k; declare -a fs
 	while : ; do case "$1" in --) shift; break;;
 		-t|--type) tp="$2"; shift 2;;
 		-p|--priority) case $2 in nc) pr=_;;
@@ -49,6 +50,7 @@ mr_todo() { PARAMS=$(getopt -o t:p:c:d:H -l \
 		-c|--context) ctx="$2"; shift 2;;
 		-d|--date) dt="$2"; shift 2;;
 		-H|--follow-link) flnk=y; shift;;
+		-k|--key) k+=" -k $2"; shift 2;;
 		*) err "$ERR_OPT $1"; return;;
 	esac; done
 	case $tp in '') err 'No type specified.'; return;;
@@ -83,5 +85,6 @@ mr_todo() { PARAMS=$(getopt -o t:p:c:d:H -l \
 		for f in "${fs[@]}"; do f2flfs "$f"; done
 		fs=("${mr_flfs[@]}")
 	fi
-	scheg "func_todo $tp" -P "$ptrn" "${fs[@]}"
+	[ -n "$k" ] && scheg "func_todo $tp" -P "$ptrn" "${fs[@]}" \
+		| sort -t':' $k || scheg "func_todo $tp" -P "$ptrn" "${fs[@]}"
 }; mr_todo "$@"
