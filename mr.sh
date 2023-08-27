@@ -776,7 +776,7 @@ OPTIONs that will be directly passed to grep:
   -P, --perl-regexp
   -i, --ignore-case
 Other OPTIONs:
-  -H, --follow-link  Also earch the files linked to the FILEs, recursively.
+  -L, --follow-link  Also earch the files linked to the FILEs, recursively.
 	EOF
 }
 func_search() { local colon=$(color ":" "0;36") pre=$(color "${1%.mr}" "0;35")
@@ -806,7 +806,7 @@ f2flfs() { dargs "$@"
 		f2flfs "$dir/$as"
 	done
 }; mr_flfs=() # Files->FollowLinkFiles
-mr_search() { PARAMS=$(getopt -o EFGPiH -l extended-regexp,fixed-strings,\
+mr_search() { PARAMS=$(getopt -o EFGPiL -l extended-regexp,fixed-strings,\
 basic-regexp,perl-regexp,ignore-case,follow-link \
 	-n 'mr_search' -- "$@"); [ $? -ne 0 ] && err "$ERR_ARG" && return
 	eval set -- "$PARAMS"; dargs "$@"
@@ -814,7 +814,7 @@ basic-regexp,perl-regexp,ignore-case,follow-link \
 	while : ; do case "$1" in --) shift; break;;
 		-E|--extended-regexp|-F|--fixed-strings|-G|--basic-regexp|\
 		-P|--perl-regexp|-i|--ignore-case) opt+=" $1"; shift;;
-		-H|--follow-link) flnk=y; shift;;
+		-L|--follow-link) flnk=y; shift;;
 		*) err "$ERR_OPT $1"; return;;
 	esac; done
 	[ -z "$1" ] && { err "No pattern!"; return; }

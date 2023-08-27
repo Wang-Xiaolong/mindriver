@@ -12,7 +12,7 @@ Arguments:
                          [2-5]           Decimal range
   -d, --date=[re]      8-digit date like 20230811, or 2023\\\\d*
   -c, --context=[re]   User defined context word
-  -H, --follow-link
+  -L, --follow-link
   -k, --key=KEYDEF     Sort via a key. Will be passed to sort command.
 	EOF
 }; [ -n "$hlp" ] && usage_todo && return
@@ -37,7 +37,7 @@ func_todo() { dargs "$@"; local wd pr dt ctx
 	txt=$(sed "s/$mtchd/$cl/g" <<< "$txt")
 	echo -e "$pr$colon$ctx$colon$dt$colon$pre$txt"
 } # $1=type $2=file_path $3=note_id $4=note_ln $5=file_ln $6=matched_txt
-mr_todo() { PARAMS=$(getopt -o t:p:c:d:Hk: -l \
+mr_todo() { PARAMS=$(getopt -o t:p:c:d:Lk: -l \
 	type:,priority:,context:,due:,follow-link,key: \
 	-n 'mr_todo' -- "$@"); [ $? -ne 0 ] && err "$ERR_ARG" && return
 	eval set -- "$PARAMS"; dargs "$@"
@@ -49,7 +49,7 @@ mr_todo() { PARAMS=$(getopt -o t:p:c:d:Hk: -l \
 			*) pr="$2";; esac; shift 2;;
 		-c|--context) ctx="$2"; shift 2;;
 		-d|--date) dt="$2"; shift 2;;
-		-H|--follow-link) flnk=y; shift;;
+		-L|--follow-link) flnk=y; shift;;
 		-k|--key) k+=" -k $2"; shift 2;;
 		*) err "$ERR_OPT $1"; return;;
 	esac; done
