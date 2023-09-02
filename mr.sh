@@ -120,7 +120,7 @@ assert_match() { [[ "$1" =~ $2 ]] || assertx "$1 =~ $2"; }
 # https://unix.stackexchange.com/questions/3478/how-can-i-check-the-base64-value-for-an-integer
 int2r64x() { awk -M 'NR==FNR{a[NR-1]=$0;next}{if($0==0){print"A";next}o="";for(n=$0;n!=0;n=int(n/64))o=a[n%64]o;print o}' <(printf %s\\n {A..Z} {a..z} {0..9} - _) - <<< $1; }
 r64x2int() { awk -M 'NR==FNR{a[$0]=NR-1;next}{n=0;for(i=1;i<=length($0);i++)n=n*64+a[substr($0,i,1)];print n}' <(printf %s\\n {A..Z} {a..z} {0..9} - _) - <<< $1; }
-rand64x() { int2r64x $RANDOM; }
+rand64x() { int2r64x $((RANDOM+4096)); }
 date2r64x() { int2r64x $(date +%s); }
 #== String Functions ===========================================================
 trim_txt() { local str=$(sed 's/[[:space:]]*$//' <<< "$1")
